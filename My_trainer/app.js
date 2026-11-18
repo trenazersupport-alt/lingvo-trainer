@@ -7,6 +7,14 @@ let selectedCat = 'all';
 // ДАННЫЕ ИЗ ПАМЯТИ УСТРОЙСТВА
 let learnedIds = JSON.parse(localStorage.getItem('lt_learned') || '[]');
 let personalIds = JSON.parse(localStorage.getItem('lt_personal') || '[]');
+let hardIds = JSON.parse(localStorage.getItem('lt_hard') || '[]');
+let hardStreak = JSON.parse(localStorage.getItem('lt_hard_streak') || '{}');
+
+function toggleHard(id) {
+  hardIds = hardIds.includes(id) ? hardIds.filter(x => x !== id) : [...hardIds, id];
+  localStorage.setItem('lt_hard', JSON.stringify(hardIds));
+  render();
+}
 let customWords = JSON.parse(localStorage.getItem('lt_custom_words') || '{"ko":[],"en":[]}');
 
 // БАЗОВЫЕ СЛОВАРИ (С ПОСЛОВНЫМ ПЕРЕВОДОМ ДЛЯ ПРИМЕРОВ)
@@ -347,6 +355,7 @@ function updateStatsBox() {
 // ОТРИСОВКА КАРТОЧКИ СЛОВА
 function renderWordCard(item) {
   const isLearned = learnedIds.includes(item.id);
+  const isHard = hardIds.includes(item.id);
   const isPersonal = personalIds.includes(item.id);
   const safeWord = item.word.replace(/'/g, "\\'");
   const safeEx = item.ex.replace(/'/g, "\\'");
@@ -381,6 +390,9 @@ function renderWordCard(item) {
         <button class="action-chip ${isLearned ? 'learned-active' : ''}" onclick="toggleLearned('${item.id}')">
           ${isLearned ? '✅ Выучено' : '⬜ Выучить'}
         </button>
+        <button class="action-chip" style="${isHard ? 'border-color:#ffb84d; color:#ffb84d;' : ''}" onclick="toggleHard('${item.id}')">
+  ${isHard ? '🔁 Повторю позже' : '🕒 Повторить позже'}
+</button>
         <button class="action-chip" onclick="togglePersonal('${item.id}')">
           ${isPersonal ? '⭐ В словаре' : '☆ В личный'}
         </button>
