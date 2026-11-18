@@ -1584,5 +1584,5 @@ async function sendReportEmail() {
 
   window.location.href = mailtoUrl;
   if (typeof closeModal === 'function') closeModal('reportModal');
-}
+
 
