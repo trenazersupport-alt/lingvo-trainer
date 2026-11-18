@@ -1027,6 +1027,17 @@ function checkSpeech(targetWord, btnEl, itemId) {
       alert(text);
     }
   };
+function checkSpeech(targetWord, btnEl, itemId) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const resBox = itemId ? document.getElementById('speech_res_' + itemId) : document.getElementById('voiceResult');
+  const showMsg = (text, color) => {
+    if (resBox) {
+      resBox.textContent = text;
+      resBox.style.color = color;
+    } else {
+      alert(text);
+    }
+  };
 
   if (!SpeechRec) {
     return showMsg('⚠️ Распознавание речи не поддерживается. Откройте сайт в Chrome.', '#ff6b6b');
@@ -1037,13 +1048,15 @@ function checkSpeech(targetWord, btnEl, itemId) {
   rec.interimResults = false;
   rec.maxAlternatives = 1;
 
-  const oldText = btnEl.textContent;
-  btnEl.textContent = '🔴';
-  btnEl.style.borderColor = '#ff4747';
-  showMsg('🎙️ Слушаю... Произнесите слово', '#aaa');
+  const oldText = btnEl ? btnEl.textContent : '';
+  if (btnEl) {
+    btnEl.textContent = '🔴';
+    btnEl.style.borderColor = '#ff4747';
+  }
+  showMsg('🎙️ Слушаю... Произнесите фразу', '#aaa');
 
   rec.onresult = function(event) {
-    const said = event.results[0][0].transcript.trim();
+    const said = event.results.at(0).at(0).transcript.trim();
     const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '');
     const cleanTarget = targetWord.toLowerCase().replace(/[.,!?]/g, '');
 
@@ -1058,21 +1071,23 @@ function checkSpeech(targetWord, btnEl, itemId) {
     if (event.error === 'not-allowed') {
       showMsg('🚫 Разрешите доступ к микрофону в настройках браузера.', '#ff6b6b');
     } else if (event.error === 'no-speech') {
-      showMsg('🔇 Речь не услышана. Нажмите 🎙️ и скажите громче.', '#ffb84d');
+      showMsg('🔇 Речь не услышана. Нажмите на микрофон и скажите громче.', '#ffb84d');
     } else {
       showMsg('⚠️ Ошибка микрофона: ' + event.error, '#ff6b6b');
     }
   };
 
   rec.onend = function() {
-    btnEl.textContent = oldText;
-    btnEl.style.borderColor = '';
+    if (btnEl) {
+      btnEl.textContent = oldText;
+      btnEl.style.borderColor = '';
+    }
   };
 
   try {
     rec.start();
   } catch (e) {
-    btnEl.textContent = oldText;
+    if (btnEl) btnEl.textContent = oldText;
   }
 }
 if (typeof switchTab === 'function') switchTab(curTab);
