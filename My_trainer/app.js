@@ -877,4 +877,139 @@ function stopRepeatSession(finished = false) {
   render();
   if (finished) alert(`🎉 Тренировка завершена! Уверенно произнесено слов: ${done}.`);
 }
+// НОВЫЙ ДИЗАЙН БАЗЫ СЛОВ: 7 РАЗДЕЛОВ + СПИСОК + МЕНЮ ТРИ ТОЧКИ (⋮)
+let selectedGroup = '';
+let selectedSubCat = 'all';
+let openDotsId = null;
+
+const WORD_GROUPS_LIST = [
+  { id: '1. Человек и физиология', icon: '🧍', desc: 'Тело, здоровье, еда, одежда, возраст' },
+  { id: '2. Психология и внутренний мир', icon: '🧠', desc: 'Эмоции, характер, память, восприятие' },
+  { id: '3. Общение и социум', icon: '💬', desc: 'Этикет, споры, семья, профессии' },
+  { id: '4. Природа и мир', icon: '🌿', desc: 'Животные, растения, погода, космос' },
+  { id: '5. Быт и пространство', icon: '🏠', desc: 'Дом, транспорт, город, техника' },
+  { id: '6. Абстрактные понятия', icon: '⏳', desc: 'Время, форма, счет, действия, свойства' },
+  { id: '7. Культура и наука', icon: '🎭', desc: 'Искусство, наука, закон, религия' }
+];
+
+function toggleDotsMenu(id, e) {
+  e.stopPropagation();
+  openDotsId = (openDotsId === id) ? null : id;
+  render();
+}
+
+document.addEventListener('click', () => {
+  if (openDotsId) { openDotsId = null; render(); }
+});
+
+function renderWordRowCompact(item) {
+  const isLearned = learnedIds.includes(item.id);
+  const isPersonal = personalIds.includes(item.id);
+  const isHard = hardIds.includes(item.id);
+  const isOpen = openDotsId === item.id;
+  const safeWord = item.word.replace(/'/g, "\\'");
+
+  return `
+    <div class="word-row ${isLearned ? 'is-learned' : ''}">
+      <div class="word-row-info">
+        <div class="word-row-top">
+          <span class="word-row-orig">${item.word}</span>
+          <span class="word-row-tr">${item.translit || ''}</span>
+          ${isLearned ? '<span style="color:#2ecc71; font-size:0.8rem;">✅</span>' : ''}
+          ${isHard ? '<span style="color:#ffb84d; font-size:0.8rem;">🔁</span>' : ''}
+        </div>
+        <div class="word-row-mean">${item.meaning}</div>
+        <div style="font-size:0.78rem; color:#777; margin-top:2px;">${item.cat || ''}</div>
+      </div>
+      <div class="word-row-actions">
+        <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${safeWord}')">🔊</button>
+        <button class="icon-circle-btn" title="Проверить произношение" onclick="checkSpeech('${safeWord}', this)">🎙️</button>
+        <div class="dots-wrapper">
+          <button class="icon-circle-btn" title="Действия" onclick="toggleDotsMenu('${item.id}', event)">⋮</button>
+          <div class="dots-menu ${isOpen ? 'open' : ''}" onclick="event.stopPropagation()">
+            <button class="dots-item" onclick="togglePersonal('${item.id}'); openDotsId=null;">
+              ${isPersonal ? '★ Убрать из словаря' : '☆ В свой словарь'}
+            </button>
+            <button class="dots-item" onclick="toggleHard('${item.id}'); openDotsId=null;">
+              ${isHard ? '🔁 Убрать из повтора' : '🕒 Выучить позже'}
+            </button>
+            <button class="dots-item" onclick="toggleLearned('${item.id}'); openDotsId=null;">
+              ${isLearned ? '✅ Снять «Выучено»' : '⬜ Выучено'}
+            </button>
+            <button class="dots-item" style="color:#ff7b7b;" onclick="openReport('${safeWord}'); openDotsId=null;">
+              ⚠️ Сообщить об ошибке
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+const _origRenderForWords = render;
+render = function() {
+  if (curTab !== 'words') return _origRenderForWords();
+  const ws = document.getElementById('workspace');
+  const all = getAllWords();
+
+  if (!selectedGroup && !searchQuery.trim()) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>📚 База слов — выберите раздел</h2>
+        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" style="display:none" aria-hidden="true" />
+        <input type="password" style="display:none" aria-hidden="true" />
+        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Быстрый поиск по всем разделам..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+      </div>
+      <div class="cat-grid">
+        ${WORD_GROUPS_LIST.map(g => {
+          const count = all.filter(w => w.group === g.id).length;
+          return `
+            <div class="cat-tile" onclick="selectedGroup='${g.id}'; selectedSubCat='all'; render()">
+              <div>
+                <div style="font-size:1.6rem; margin-bottom:8px;">${g.icon}</div>
+                <div class="cat-tile-title">${g.id}</div>
+                <div class="cat-tile-sub">${g.desc}</div>
+              </div>
+              <div style="margin-top:12px; font-size:0.85rem; color:#ff6b6b; font-weight:600;">Слов в разделе: ${count} →</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  let list = selectedGroup ? all.filter(w => w.group === selectedGroup) : all;
+  const subCats = [...new Set(list.map(w => w.cat).filter(Boolean))];
+  if (selectedSubCat !== 'all') list = list.filter(w => w.cat === selectedSubCat);
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+  }
+
+  ws.innerHTML = `
+    <div class="section-header">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="selectedGroup=''; searchQuery=''; render()">← К разделам</button>
+        <h2>${selectedGroup || 'Результаты поиска'} (${list.length})</h2>
+      </div>
+      <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
+    </div>
+    <div class="toolbar">
+      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в разделе..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+      ${subCats.length ? `
+        <select class="select-dark" onchange="selectedSubCat=this.value; render()">
+          <option value="all" ${selectedSubCat === 'all' ? 'selected' : ''}>Все подтемы</option>
+          ${subCats.map(c => `<option value="${c}" ${selectedSubCat === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      ` : ''}
+    </div>
+    <div class="word-list">
+      ${list.length ? list.map(renderWordRowCompact).join('') : '<p style="color:#999;">В этой подтеме пока нет слов.</p>'}
+    </div>
+  `;
+};
 
