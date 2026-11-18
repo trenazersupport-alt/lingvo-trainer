@@ -472,9 +472,10 @@ function render() {
       </div>
       ${rnd ? renderWordCard(rnd) : ''}
     `;
+  } else if (curTab === 'game') {
+    renderGameScreen(ws);
   } else {
     const titles = {
-      game: '🎮 Игра: Вопрос — Ответ на время',
       video: '🎬 Видеоразборы фраз из дорам и интервью',
       chats: '💬 Общий чат, личные комнаты и ИИ-помощник',
       rating: '🏆 Рейтинг лучших учеников'
