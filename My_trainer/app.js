@@ -1535,7 +1535,7 @@ function openReport(wordText) {
   if (typeof openModal === 'function') openModal('reportModal');
 }
 
-function sendReportEmail() {
+async function sendReportEmail() {
   const subj = (document.getElementById('reportSubject')?.value || 'Обращение в поддержку').trim();
   const userMail = (document.getElementById('reportUserEmail')?.value || '').trim();
   const msg = (document.getElementById('reportText')?.value || '').trim();
@@ -1544,6 +1544,41 @@ function sendReportEmail() {
     return alert('Пожалуйста, опишите ошибку или ваш вопрос перед отправкой.');
   }
 
+  const btn = document.querySelector('#reportModal .btn-primary');
+  const oldText = btn ? btn.textContent : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Отправляем письмо...';
+  }
+
+  try {
+    const res = await fetch(`https://formsubmit.co{SUPPORT_EMAIL}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: `Lingvo Trainer: ${subj}`,
+        Тема: subj,
+        Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
+        Почта_для_ответа: userMail || 'Не указана',
+        Сообщение: msg
+      })
+    });
+
+    if (res.ok) {
+      alert('✅ Сообщение успешно отправлено на trenazer.support@gmail.com!');
+      if (typeof closeModal === 'function') closeModal('reportModal');
+    } else {
+      alert('⚠️ Не удалось отправить письмо. Попробуйте чуть позже.');
+    }
+  } catch (e) {
+    alert('⚠️ Ошибка сети при отправке. Проверьте интернет-соединение.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+}
   const fullBody = `Тема: ${subj}\nЯзык тренажёра: ${curLang === 'ko' ? 'Корейский' : 'Английский'}\nПочта пользователя для ответа: ${userMail || 'не указана'}\n\nСообщение:\n${msg}`;
   const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Lingvo Trainer: ' + subj)}&body=${encodeURIComponent(fullBody)}`;
 
