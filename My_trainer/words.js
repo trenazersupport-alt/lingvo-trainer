@@ -1,4 +1,4 @@
-const baseWords = {
+Object.assign(baseWords, {
   ko: [
     {
       id: 'ko_1', word: '안녕하세요', translit: 'аннёнхасэё', meaning: 'Здравствуйте',
@@ -147,4 +147,5 @@ const baseWords = {
       wordMap: { 'You': 'ты / вы', 'can': 'можешь', 'achieve': 'достичь', 'any': 'любой', 'goal': 'цели', 'with': 'с', 'patience': 'терпением' }
     }
   ]
-};
+});
+
