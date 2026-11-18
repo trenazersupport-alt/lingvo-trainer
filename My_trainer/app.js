@@ -1185,3 +1185,92 @@ render = function() {
     </div>
   `;
 };
+// НОВЫЙ ДИЗАЙН ХАНЧА: ПЛИТКИ КОРНЕЙ + СПИСОК СЛОВ + МЕНЮ ТРИ ТОЧКИ (⋮)
+let selectedHanjaRoot = '';
+
+const _origGetAllWordsForHanja = getAllWords;
+getAllWords = function() {
+  const base = _origGetAllWordsForHanja();
+  if (curLang === 'ko' && typeof hanjaFullList !== 'undefined') {
+    const hWords = hanjaFullList.flatMap(h => h.words.map(w => ({ ...w, group: '🏯 Ханча (Иероглифика)' })));
+    return [...base, ...hWords];
+  }
+  return base;
+};
+
+if (typeof WORD_GROUPS_LIST !== 'undefined' && !WORD_GROUPS_LIST.some(g => g.id === '🏯 Ханча (Иероглифика)')) {
+  WORD_GROUPS_LIST.push({ id: '🏯 Ханча (Иероглифика)', icon: '🏯', desc: 'Слова с китайскими корнями' });
+}
+
+const _origRenderForHanja = render;
+render = function() {
+  if (curTab !== 'hanja') return _origRenderForHanja();
+  const ws = document.getElementById('workspace');
+
+  if (curLang !== 'ko') {
+    ws.innerHTML = `
+      <div class="section-header"><h2>🏯 Ханча (Корни иероглифов)</h2></div>
+      <div class="game-box" style="margin-top:20px;">
+        <p style="color:#ccc;">Раздел <b>Ханча</b> относится к корейскому языку. Переключите язык на <b>🇰🇷 Корейский</b> в верхнем меню!</p>
+      </div>
+    `;
+    return;
+  }
+
+  const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
+
+  if (!selectedHanjaRoot && !searchQuery.trim()) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>🏯 Ханча — выберите корень (${listData.length})</h2>
+      </div>
+      <div class="toolbar">
+        <input type="text" style="display:none" aria-hidden="true" />
+        <input type="password" style="display:none" aria-hidden="true" />
+        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="hanja_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск по корню или слову Ханча..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+      </div>
+      <div class="cat-grid">
+        ${listData.map(h => `
+          <div class="cat-tile" onclick="selectedHanjaRoot='${h.root}'; render()">
+            <div>
+              <div style="font-size:1.5rem; font-weight:700; color:#ff6b6b; margin-bottom:6px;">${h.root}</div>
+              <div class="cat-tile-title">${h.meaning}</div>
+            </div>
+            <div style="margin-top:12px; font-size:0.85rem; color:#aaa; font-weight:600;">Слов на корень: ${h.words.length} →</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  let wordsToShow = [];
+  let titleText = 'Результаты поиска';
+  if (selectedHanjaRoot) {
+    const found = listData.find(h => h.root === selectedHanjaRoot);
+    wordsToShow = found ? found.words : [];
+    titleText = found ? `${found.root} — ${found.meaning}` : selectedHanjaRoot;
+  } else {
+    wordsToShow = listData.flatMap(h => h.words);
+  }
+
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    wordsToShow = wordsToShow.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+  }
+
+  ws.innerHTML = `
+    <div class="section-header">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="selectedHanjaRoot=''; searchQuery=''; render()">← К корням</button>
+        <h2>${titleText} (${wordsToShow.length})</h2>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="hanja_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в списке..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+    </div>
+    <div class="word-list">
+      ${wordsToShow.length ? wordsToShow.map(renderWordRowCompact).join('') : '<p style="color:#999;">Слов не найдено.</p>'}
+    </div>
+  `;
+};
