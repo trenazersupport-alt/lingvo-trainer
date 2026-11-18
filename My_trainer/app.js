@@ -1019,7 +1019,9 @@ render = function() {
 // ВСТРОЕННАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ БЕЗ ВСПЛЫВАЮЩИХ ОКОН
 function checkSpeech(targetWord, btnEl, itemId) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const resBox = itemId ? document.getElementById('speech_res_' + itemId) : null;
+  const realBtn = (btnEl && typeof btnEl === 'object') ? btnEl : null;
+  const legacyId = (typeof btnEl === 'string') ? btnEl : itemId;
+  const resBox = document.getElementById('speech_res_' + legacyId) || document.getElementById('speech_' + legacyId) || document.getElementById('voiceResult');
   const showMsg = (text, color) => {
     if (resBox) {
       resBox.textContent = text;
@@ -1028,9 +1030,11 @@ function checkSpeech(targetWord, btnEl, itemId) {
       alert(text);
     }
   };
-function checkSpeech(targetWord, btnEl, itemId) {
+function checkSpeech(targetWord, rawBtn, itemId) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const resBox = itemId ? document.getElementById('speech_res_' + itemId) : document.getElementById('voiceResult');
+  const btnEl = (rawBtn && typeof rawBtn === 'object') ? rawBtn : null;
+  const legacyId = (typeof rawBtn === 'string') ? rawBtn : itemId;
+  const resBox = document.getElementById('speech_res_' + legacyId) || document.getElementById('speech_' + legacyId) || document.getElementById('voiceResult');
   const showMsg = (text, color) => {
     if (resBox) {
       resBox.textContent = text;
