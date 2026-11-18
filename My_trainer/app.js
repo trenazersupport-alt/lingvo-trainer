@@ -360,7 +360,7 @@ function renderWordCard(item) {
   const isHard = hardIds.includes(item.id);
   const isPersonal = personalIds.includes(item.id);
   const safeWord = item.word.replace(/'/g, "\\'");
-  const safeEx = item.ex.replace(/'/g, "\\'");
+    const safeEx = (item.ex || '').replace(/'/g, "\\'");
 
   return `
     <div class="word-card ${isLearned ? 'learned' : ''}">
