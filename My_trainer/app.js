@@ -1411,7 +1411,7 @@ render = function() {
               </div>
               <div class="word-row-mean" style="font-size:0.9rem; color:#bbb;">${it.note}</div>
             </div>
-            <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${it.char.split('(').split('→').pop().trim().replace(/'/g, "\\'")}')">🔊</button>
+            <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${it.char.split('(').at(0).split('→').at(-1).trim().replace(/'/g, "\\'")}')">🔊</button>
           </div>
         `).join('')}
       </div>
