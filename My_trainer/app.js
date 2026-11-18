@@ -1050,7 +1050,8 @@ function checkSpeech(targetWord, rawBtn, itemId) {
   showMsg('🎙️ Слушаю... Произнесите вслух', '#aaa');
 
   rec.onresult = function(event) {
-    const said = event.results.at(0).at(0).transcript.trim();
+    const said = event.results.item(0).item(0).transcript.trim();
+
     const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '');
     const cleanTarget = targetWord.toLowerCase().replace(/[.,!?]/g, '');
 
@@ -1062,7 +1063,8 @@ function checkSpeech(targetWord, rawBtn, itemId) {
   };
 
   rec.onerror = function(event) {
-    if (event.error === 'not-allowed') {
+  if (event.error === 'aborted') return;
+  if (event.error === 'not-allowed') {
       showMsg('🚫 Разрешите доступ к микрофону в настройках браузера.', '#ff6b6b');
     } else if (event.error === 'no-speech') {
       showMsg('🔇 Речь не услышана. Нажмите на микрофон и скажите громче.', '#ffb84d');
