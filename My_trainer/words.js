@@ -148,4 +148,5 @@ Object.assign(baseWords, {
     }
   ]
 });
+if (typeof render === 'function') render();
 
