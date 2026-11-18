@@ -412,7 +412,7 @@ function render() {
         <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
       </div>
       <div class="toolbar">
-        <input type="text" class="input-dark" placeholder="Поиск слова или перевода..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+        <input type="search" name="word_search_box" autocomplete="new-password" class="input-dark" placeholder="Поиск слова или перевода..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
         <select class="select-dark" onchange="selectedCat=this.value; render()">
           ${cats.map(c => `<option value="${c}" ${c === selectedCat ? 'selected' : ''}>${c === 'all' ? 'Все категории' : c}</option>`).join('')}
         </select>
@@ -590,3 +590,49 @@ const _oldSaveNewWord = saveNewWord;
 saveNewWord = function() { _oldSaveNewWord(); syncToCloud(false); };
 
 updateAccountUI();
+// РЕЗЕРВНОЕ КОПИРОВАНИЕ СЛОВАРЯ В ФАЙЛ (.JSON)
+function exportBackup() {
+  const backupData = {
+    app: 'LingvoTrainer',
+    date: new Date().toISOString(),
+    user: currentUser ? currentUser.email : 'guest',
+    learnedIds,
+    personalIds,
+    customWords
+  };
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `lingvo_backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.app !== 'LingvoTrainer') {
+        return alert('⚠️ Выбран неверный файл резервной копии.');
+      }
+      learnedIds = data.learnedIds || [];
+      personalIds = data.personalIds || [];
+      customWords = data.customWords || { ko: [], en: [] };
+      localStorage.setItem('lt_learned', JSON.stringify(learnedIds));
+      localStorage.setItem('lt_personal', JSON.stringify(personalIds));
+      localStorage.setItem('lt_custom_words', JSON.stringify(customWords));
+      syncToCloud(false);
+      render();
+      alert('✅ Словарь и прогресс успешно восстановлены из файла!');
+    } catch (err) {
+      alert('⚠️ Ошибка при чтении файла резервной копии.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
