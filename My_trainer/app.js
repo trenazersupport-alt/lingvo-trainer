@@ -1522,18 +1522,32 @@ function nextVoiceWord() {
   voiceWordId = next.id;
   render();
 }
-// ОТПРАВКА СООБЩЕНИЙ ОБ ОШИБКАХ И ОБРАЩЕНИЙ В ПОДДЕРЖКУ НА ПОЧТУ
-const SUPPORT_EMAIL = 'trenazersupport@gmail.com';
+// ПРИВЯЗКА МОДАЛЬНОГО ОКНА ПОДДЕРЖКИ И ОШИБОК К ПОЧТЕ trenazer.support@gmail.com
+const SUPPORT_EMAIL = 'trenazer.support@gmail.com';
 
-function sendToSupportMail(subject, bodyText) {
-  const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-  window.location.href = mailtoUrl;
-}
 function openReport(wordText) {
-  const comment = prompt(`⚠️ Сообщить об ошибке в слове/фразе: «${wordText}»\n\nОпишите, что именно не так (перевод, транскрипция или озвучка):`);
-  if (comment === null) return;
-  const body = `Слово / фраза: ${wordText}\nЯзык: ${curLang === 'ko' ? 'Корейский' : 'Английский'}\nОписание ошибки: ${comment || 'Не указано'}`;
-  sendToSupportMail(`Lingvo Trainer: Ошибка в слове «${wordText}»`, body);
+  const subjEl = document.getElementById('reportSubject');
+  const textEl = document.getElementById('reportText');
+  if (subjEl) {
+    subjEl.value = wordText ? `Ошибка в карточке: ${wordText}` : 'Вопрос в службу поддержки';
+  }
+  if (textEl) textEl.value = '';
+  if (typeof openModal === 'function') openModal('reportModal');
 }
 
+function sendReportEmail() {
+  const subj = (document.getElementById('reportSubject')?.value || 'Обращение в поддержку').trim();
+  const userMail = (document.getElementById('reportUserEmail')?.value || '').trim();
+  const msg = (document.getElementById('reportText')?.value || '').trim();
+
+  if (!msg) {
+    return alert('Пожалуйста, опишите ошибку или ваш вопрос перед отправкой.');
+  }
+
+  const fullBody = `Тема: ${subj}\nЯзык тренажёра: ${curLang === 'ko' ? 'Корейский' : 'Английский'}\nПочта пользователя для ответа: ${userMail || 'не указана'}\n\nСообщение:\n${msg}`;
+  const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Lingvo Trainer: ' + subj)}&body=${encodeURIComponent(fullBody)}`;
+
+  window.location.href = mailtoUrl;
+  if (typeof closeModal === 'function') closeModal('reportModal');
+}
 
