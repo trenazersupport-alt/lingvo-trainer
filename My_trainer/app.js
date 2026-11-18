@@ -424,8 +424,10 @@ function render() {
         <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
       </div>
       <div class="toolbar">
-             <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск слова или перевода..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-        <select class="select-dark" onchange="selectedCat=this.value; render()">
+      <input type="text" style="display:none" aria-hidden="true" />
+      <input type="password" style="display:none" aria-hidden="true" />
+      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск слова или перевода..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />            
+         <select class="select-dark" onchange="selectedCat=this.value; render()">
           ${cats.map(c => `<option value="${c}" ${c === selectedCat ? 'selected' : ''}>${c === 'all' ? 'Все категории' : c}</option>`).join('')}
         </select>
       </div>
