@@ -164,14 +164,17 @@
         </div>
       </div>
 
-      <div id="authUserBox" style="display:none;">
+            <div id="authUserBox" style="display:none;">
         <div style="background:#121218; padding:12px; border-radius:10px; border:1px solid #2ecc71; margin-bottom:14px;">
-          <div style="color:#2ecc71; font-weight:600;">✅ Облачная синхронизация активна</div>
+          <div style="color:#2ecc71; font-weight:600;">✅ Профиль активен</div>
           <div id="userEmailLabel" style="color:#fff; margin-top:4px; font-size:0.95rem;"></div>
         </div>
-        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="syncToCloud(true)">🔄 Синхронизировать сейчас</button>
+        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="exportBackup()">📥 Скачать резервную копию (.json)</button>
+        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="document.getElementById('backupFileInput').click()">📤 Восстановить из файла</button>
+        <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)" />
         <button class="btn-primary" style="width:100%;" onclick="authSignOut()">Выйти из аккаунта</button>
       </div>
+
     </div>
   </div>
 
