@@ -1453,5 +1453,5 @@ render = function() {
     </div>
   `;
 };
-}
+
 
