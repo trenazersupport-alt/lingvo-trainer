@@ -493,11 +493,9 @@ function render() {
 
 // ЗАПУСК ПРИ ОТКРЫТИИ
 render();
-// ПОДКЛЮЧЕНИЕ ОБЛАЧНОЙ БАЗЫ SUPABASE (НАТИВНЫЙ REST API БЕЗ CDN)
-const SUPABASE_URL = 'https://supabase.co';
-const SUPABASE_KEY = 'sb_publishable_uI8ZKAnDtKvqjqYcSxd09A_16HhSmFT';
-let currentUser = JSON.parse(localStorage.getItem('lt_sb_user') || 'null');
-let accessToken = localStorage.getItem('lt_sb_token') || '';
+// МГНОВЕННАЯ РЕГИСТРАЦИЯ И ПРОФИЛЬ
+let localUsers = JSON.parse(localStorage.getItem('lt_local_users') || '{}');
+let currentUser = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
 
 function setAuthMsg(text, isError = false) {
   const el = document.getElementById('authMsg');
@@ -510,11 +508,11 @@ function updateAccountUI() {
   const guestBox = document.getElementById('authGuestBox');
   const userBox = document.getElementById('authUserBox');
   const topBtn = document.getElementById('topAccountBtn');
-  if (currentUser && accessToken) {
+  if (currentUser) {
     guestBox.style.display = 'none';
     userBox.style.display = 'block';
     document.getElementById('userEmailLabel').textContent = currentUser.email;
-    if (topBtn) topBtn.textContent = '✅ ' + currentUser.email.split('@');
+    if (topBtn) topBtn.textContent = '✅ ' + currentUser.email.split('@')[0];
   } else {
     guestBox.style.display = 'block';
     userBox.style.display = 'none';
@@ -522,108 +520,64 @@ function updateAccountUI() {
   }
 }
 
-async function authSignUp() {
-  const email = document.getElementById('authEmail').value.trim();
+function authSignUp() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
   const password = document.getElementById('authPassword').value.trim();
-  if (!email || password.length < 6) {
-    return setAuthMsg('Введите почту и пароль (от 6 символов)', true);
+  if (!email || !email.includes('@') || password.length < 6) {
+    return setAuthMsg('Введите корректную почту и пароль (от 6 символов)', true);
   }
-  setAuthMsg('Создаём аккаунт...');
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) return setAuthMsg('Ошибка: ' + (data.msg || data.error_description || 'сбой регистрации'), true);
-    if (data.access_token) {
-      currentUser = data.user;
-      accessToken = data.access_token;
-      localStorage.setItem('lt_sb_user', JSON.stringify(currentUser));
-      localStorage.setItem('lt_sb_token', accessToken);
-      updateAccountUI();
-      await syncToCloud(false);
-    } else {
-      setAuthMsg('Аккаунт создан! Проверьте почту или нажмите «Войти».');
-    }
-  } catch (e) {
-    setAuthMsg('Нет связи с сервером Supabase', true);
+  if (localUsers[email]) {
+    return setAuthMsg('Этот Email уже зарегистрирован. Нажмите «Войти».', true);
   }
-}
-
-async function authSignIn() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value.trim();
-  setAuthMsg('Входим...');
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (!res.ok) return setAuthMsg('Ошибка: ' + (data.error_description || data.msg || 'неверные данные'), true);
-    currentUser = data.user;
-    accessToken = data.access_token;
-    localStorage.setItem('lt_sb_user', JSON.stringify(currentUser));
-    localStorage.setItem('lt_sb_token', accessToken);
-    updateAccountUI();
-    await loadFromCloud();
-  } catch (e) {
-    setAuthMsg('Нет связи с сервером Supabase', true);
-  }
-}
-
-function authSignOut() {
-  currentUser = null;
-  accessToken = '';
-  localStorage.removeItem('lt_sb_user');
-  localStorage.removeItem('lt_sb_token');
+  localUsers[email] = {
+    email,
+    password,
+    learnedIds: [...learnedIds],
+    personalIds: [...personalIds],
+    customWords: JSON.parse(JSON.stringify(customWords))
+  };
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  currentUser = { email };
+  localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
   updateAccountUI();
   setAuthMsg('');
 }
 
-async function syncToCloud(showAlert = false) {
-  if (!currentUser || !accessToken) return;
-  const payload = {
-    user_id: currentUser.id,
-    email: currentUser.email,
-    learned_ids: learnedIds,
-    personal_ids: personalIds,
-    custom_words: customWords,
-    updated_at: new Date().toISOString()
-  };
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_sync`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates'
-    },
-    body: JSON.stringify(payload)
-  });
-  if (res.ok && showAlert) alert('✅ Все слова и прогресс сохранены в облаке!');
+function authSignIn() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const password = document.getElementById('authPassword').value.trim();
+  const acc = localUsers[email];
+  if (!acc || acc.password !== password) {
+    return setAuthMsg('Неверная почта или пароль (или аккаунт ещё не создан)', true);
+  }
+  learnedIds = acc.learnedIds || [];
+  personalIds = acc.personalIds || [];
+  customWords = acc.customWords || { ko: [], en: [] };
+  localStorage.setItem('lt_learned', JSON.stringify(learnedIds));
+  localStorage.setItem('lt_personal', JSON.stringify(personalIds));
+  localStorage.setItem('lt_custom_words', JSON.stringify(customWords));
+  currentUser = { email };
+  localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
+  updateAccountUI();
+  render();
+  setAuthMsg('');
 }
 
-async function loadFromCloud() {
-  if (!currentUser || !accessToken) return;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_sync?user_id=eq.${currentUser.id}&select=*`, {
-    headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + accessToken }
-  });
-  const rows = await res.json();
-  if (rows && rows.length > 0) {
-    learnedIds = rows.learned_ids || [];
-    personalIds = rows.personal_ids || [];
-    customWords = rows.custom_words || { ko: [], en: [] };
-    localStorage.setItem('lt_learned', JSON.stringify(learnedIds));
-    localStorage.setItem('lt_personal', JSON.stringify(personalIds));
-    localStorage.setItem('lt_custom_words', JSON.stringify(customWords));
-    render();
-  } else {
-    await syncToCloud(false);
-  }
+function authSignOut() {
+  syncToCloud(false);
+  currentUser = null;
+  localStorage.removeItem('lt_active_user');
+  updateAccountUI();
+  setAuthMsg('');
+}
+
+function syncToCloud(showAlert = false) {
+  if (!currentUser || !localUsers[currentUser.email]) return;
+  localUsers[currentUser.email].learnedIds = [...learnedIds];
+  localUsers[currentUser.email].personalIds = [...personalIds];
+  localUsers[currentUser.email].customWords = JSON.parse(JSON.stringify(customWords));
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  if (showAlert) alert('✅ Прогресс и личный словарь успешно сохранены в профиле!');
 }
 
 const _oldToggleLearned = toggleLearned;
@@ -636,4 +590,3 @@ const _oldSaveNewWord = saveNewWord;
 saveNewWord = function() { _oldSaveNewWord(); syncToCloud(false); };
 
 updateAccountUI();
-if (currentUser && accessToken) loadFromCloud();
