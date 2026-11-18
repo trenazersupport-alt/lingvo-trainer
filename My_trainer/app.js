@@ -263,6 +263,7 @@ function showWordHint(cardId, word, meaning) {
 }
 
 function buildInteractiveSentence(item) {
+    if (!item || !item.ex) return '';
   const tokens = item.ex.split(' ');
   return tokens.map(tok => {
     const clean = tok.replace(/[.,!?]/g, '');
