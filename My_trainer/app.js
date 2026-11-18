@@ -1,6 +1,7 @@
 // СОСТОЯНИЕ ПРИЛОЖЕНИЯ
-let curLang = 'ko';
-let curTab = 'words';
+let curLang = localStorage.getItem('lt_cur_lang') || 'ko';
+let curTab = localStorage.getItem('lt_cur_tab') || 'words';
+
 let searchQuery = '';
 let selectedCat = 'all';
 
@@ -191,6 +192,7 @@ const grammarData = {
 // ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА И ВКЛАДОК
 function setLang(lang) {
   curLang = lang;
+  localStorage.setItem('lt_cur_lang', lang);)
   selectedCat = 'all';
   document.body.className = lang === 'ko' ? 'lang-ko' : 'lang-en';
   document.getElementById('btnLangKo').classList.toggle('active', lang === 'ko');
@@ -200,11 +202,11 @@ function setLang(lang) {
 
 function switchTab(tab) {
   curTab = tab;
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tab);
-  });
+  localStorage.setItem('lt_cur_tab', tab);
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   render();
 }
+
 
 // ОЗВУЧКА ТЕКСТА
 function speakText(text) {
@@ -1073,3 +1075,4 @@ function checkSpeech(targetWord, btnEl, itemId) {
     btnEl.textContent = oldText;
   }
 }
+if (typeof switchTab === 'function') switchTab(curTab);
