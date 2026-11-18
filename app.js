@@ -493,4 +493,100 @@ function render() {
 
 // ЗАПУСК ПРИ ОТКРЫТИИ
 render();
-const SUPABASE_URL = 'https://supabase.co';
+// МГНОВЕННАЯ РЕГИСТРАЦИЯ И ПРОФИЛЬ
+let localUsers = JSON.parse(localStorage.getItem('lt_local_users') || '{}');
+let currentUser = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
+
+function setAuthMsg(text, isError = false) {
+  const el = document.getElementById('authMsg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isError ? '#ff6b6b' : '#2ecc71';
+}
+
+function updateAccountUI() {
+  const guestBox = document.getElementById('authGuestBox');
+  const userBox = document.getElementById('authUserBox');
+  const topBtn = document.getElementById('topAccountBtn');
+  if (currentUser) {
+    guestBox.style.display = 'none';
+    userBox.style.display = 'block';
+    document.getElementById('userEmailLabel').textContent = currentUser.email;
+    if (topBtn) topBtn.textContent = '✅ ' + currentUser.email.split('@');
+  } else {
+    guestBox.style.display = 'block';
+    userBox.style.display = 'none';
+    if (topBtn) topBtn.textContent = '👤 Аккаунт';
+  }
+}
+
+function authSignUp() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const password = document.getElementById('authPassword').value.trim();
+  if (!email || !email.includes('@') || password.length < 6) {
+    return setAuthMsg('Введите корректную почту и пароль (от 6 символов)', true);
+  }
+  if (localUsers[email]) {
+    return setAuthMsg('Этот Email уже зарегистрирован. Нажмите «Войти».', true);
+  }
+  localUsers[email] = {
+    email,
+    password,
+    learnedIds: [...learnedIds],
+    personalIds: [...personalIds],
+    customWords: JSON.parse(JSON.stringify(customWords))
+  };
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  currentUser = { email };
+  localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
+  updateAccountUI();
+  setAuthMsg('');
+}
+function authSignIn() {
+  const email = document.getElementById('authEmail').value.trim().toLowerCase();
+  const password = document.getElementById('authPassword').value.trim();
+  const acc = localUsers[email];
+  if (!acc || acc.password !== password) {
+    return setAuthMsg('Неверная почта или пароль (или аккаунт ещё не создан)', true);
+  }
+  learnedIds = acc.learnedIds || [];
+  personalIds = acc.personalIds || [];
+  customWords = acc.customWords || { ko: [], en: [] };
+  localStorage.setItem('lt_learned', JSON.stringify(learnedIds));
+  localStorage.setItem('lt_personal', JSON.stringify(personalIds));
+  localStorage.setItem('lt_custom_words', JSON.stringify(customWords));
+  currentUser = { email };
+  localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
+  updateAccountUI();
+  render();
+  setAuthMsg('');
+}
+
+function authSignOut() {
+  syncToCloud(false);
+  currentUser = null;
+  localStorage.removeItem('lt_active_user');
+  updateAccountUI();
+  setAuthMsg('');
+}
+
+function syncToCloud(showAlert = false) {
+  if (!currentUser || !localUsers[currentUser.email]) return;
+  localUsers[currentUser.email].learnedIds = [...learnedIds];
+  localUsers[currentUser.email].personalIds = [...personalIds];
+  localUsers[currentUser.email].customWords = JSON.parse(JSON.stringify(customWords));
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  if (showAlert) alert('✅ Прогресс и личный словарь успешно сохранены в профиле!');
+}
+
+const _oldToggleLearned = toggleLearned;
+toggleLearned = function(id) { _oldToggleLearned(id); syncToCloud(false); };
+
+const _oldTogglePersonal = togglePersonal;
+togglePersonal = function(id) { _oldTogglePersonal(id); syncToCloud(false); };
+
+const _oldSaveNewWord = saveNewWord;
+saveNewWord = function() { _oldSaveNewWord(); syncToCloud(false); };
+
+updateAccountUI();
+
