@@ -1016,34 +1016,23 @@ render = function() {
     </div>
   `;
 };
-// ВСТРОЕННАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ БЕЗ ВСПЛЫВАЮЩИХ ОКОН
-function checkSpeech(targetWord, btnEl, itemId) {
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const realBtn = (btnEl && typeof btnEl === 'object') ? btnEl : null;
-  const legacyId = (typeof btnEl === 'string') ? btnEl : itemId;
-  const resBox = document.getElementById('speech_res_' + legacyId) || document.getElementById('speech_' + legacyId) || document.getElementById('voiceResult');
-  const showMsg = (text, color) => {
-    if (resBox) {
-      resBox.textContent = text;
-      resBox.style.color = color;
-    } else {
-      alert(text);
-    }
-  };
+// УНИВЕРСАЛЬНАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ ВСЕХ РАЗДЕЛОВ
 function checkSpeech(targetWord, rawBtn, itemId) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const btnEl = (rawBtn && typeof rawBtn === 'object') ? rawBtn : null;
   const legacyId = (typeof rawBtn === 'string') ? rawBtn : itemId;
   const resBox = document.getElementById('speech_res_' + legacyId) || document.getElementById('speech_' + legacyId) || document.getElementById('voiceResult');
+
   const showMsg = (text, color) => {
     if (resBox) {
       resBox.textContent = text;
       resBox.style.color = color;
-    } else {
-      alert(text);
     }
   };
 
+  if (!targetWord) {
+    return showMsg('⚠️ Для этой карточки не задан текст для произношения.', '#ffb84d');
+  }
   if (!SpeechRec) {
     return showMsg('⚠️ Распознавание речи не поддерживается. Откройте сайт в Chrome.', '#ff6b6b');
   }
@@ -1058,7 +1047,7 @@ function checkSpeech(targetWord, rawBtn, itemId) {
     btnEl.textContent = '🔴';
     btnEl.style.borderColor = '#ff4747';
   }
-  showMsg('🎙️ Слушаю... Произнесите фразу', '#aaa');
+  showMsg('🎙️ Слушаю... Произнесите вслух', '#aaa');
 
   rec.onresult = function(event) {
     const said = event.results.at(0).at(0).transcript.trim();
