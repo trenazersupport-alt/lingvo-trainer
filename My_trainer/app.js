@@ -1012,4 +1012,58 @@ render = function() {
     </div>
   `;
 };
+// УЛУЧШЕННАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ НОВОГО СПИСКА СЛОВ
+function checkSpeech(targetWord, btnEl) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    return alert('Распознавание речи не поддерживается в этом браузере. Откройте сайт в Google Chrome.');
+  }
+
+  const rec = new SpeechRec();
+  rec.lang = curLang === 'ko' ? 'ko-KR' : 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  const oldText = btnEl.textContent;
+  btnEl.textContent = '🔴';
+  btnEl.style.borderColor = '#ff4747';
+
+  rec.onresult = function(event) {
+    const said = event.results[0][0].transcript.trim();
+    const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '');
+    const cleanTarget = targetWord.toLowerCase().replace(/[.,!?]/g, '');
+
+    btnEl.textContent = oldText;
+    btnEl.style.borderColor = '';
+
+    if (cleanSaid === cleanTarget || (cleanTarget.includes(cleanSaid) && cleanSaid.length > 1)) {
+      alert(`✅ Отлично! Произнесено верно:\nЭталон: ${targetWord}\nВы сказали: ${said}`);
+    } else {
+      alert(`⚠️ Попробуйте ещё раз:\nЭталон: ${targetWord}\nРаспознано: ${said}`);
+    }
+  };
+
+  rec.onerror = function(event) {
+    btnEl.textContent = oldText;
+    btnEl.style.borderColor = '';
+    if (event.error === 'not-allowed') {
+      alert('🚫 Доступ к микрофону запрещён. Нажмите на значок замка/настроек слева от адреса сайта и разрешите микрофон.');
+    } else if (event.error === 'no-speech') {
+      alert('🔇 Речь не услышана. Нажмите 🎙️ и произнесите слово громче.');
+    } else {
+      alert('⚠️ Ошибка микрофона: ' + event.error);
+    }
+  };
+
+  rec.onend = function() {
+    btnEl.textContent = oldText;
+    btnEl.style.borderColor = '';
+  };
+
+  try {
+    rec.start();
+  } catch (e) {
+    btnEl.textContent = oldText;
+  }
+}
 
