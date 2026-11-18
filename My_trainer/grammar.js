@@ -136,3 +136,4 @@ const grammarCourse = {
     }
   ]
 };
+if (typeof render === 'function') render();
