@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lingvo Trainer — Корейский и Английский</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="lang-ko">
+
+  <!— ВЕРХНЯЯ ПАНЕЛЬ —>
+  <header class="topbar">
+    <div class="brand-box" onclick="openModal('aboutModal')" title="О приложении и правила">
+      <img src="logo.png" alt="Logo" />
+      <div>
+        <div class="brand-title">Lingvo Trainer</div>
+        <div class="brand-sub">О проекте • Правила • Статистика</div>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <div class="lang-switch">
+        <button class="lang-btn active" id="btnLangKo" onclick="setLang('ko')">🇰🇷 Корейский</button>
+        <button class="lang-btn" id="btnLangEn" onclick="setLang('en')">🇬🇧 Английский</button>
+      </div>
+<button class="account-btn" id="topAccountBtn" onclick="openModal('accountModal')">
+        👤 Аккаунт
+      </button>
+    </div>
+  </header>
+
+  <!— ОСНОВНОЙ МАКЕТ —>
+  <div class="main-layout">
+    <!— ЛЕВОЕ МЕНЮ —>
+    <aside class="sidebar">
+      <div class="menu-section-title">Обучение</div>
+      <button class="nav-btn active" data-tab="words" onclick="switchTab('words')">
+        📚 База слов
+      </button>
+      <button class="nav-btn" data-tab="myDict" onclick="switchTab('myDict')">
+        ⭐ Личный словарь
+      </button>
+      <button class="nav-btn" data-tab="hanja" onclick="switchTab('hanja')">
+        🧩 Корни слов (Ханча)
+      </button>
+      <button class="nav-btn" data-tab="grammar" onclick="switchTab('grammar')">
+        📖 Грамматика
+      </button>
+      <button class="nav-btn" data-tab="voice" onclick="switchTab('voice')">
+        🎙️ Тренировка голоса
+      </button>
+
+      <div class="menu-section-title">Практика и Сообщество</div>
+      <button class="nav-btn" data-tab="game" onclick="switchTab('game')">
+        🎮 Игра: Вопрос-Ответ <span class="badge-soon">Скоро</span>
+      </button>
+      <button class="nav-btn" data-tab="video" onclick="switchTab('video')">
+        🎬 Видеоразборы <span class="badge-soon">Скоро</span>
+      </button>
+      <button class="nav-btn" data-tab="chats" onclick="switchTab('chats')">
+        💬 Чаты и ИИ-помощник <span class="badge-soon">Скоро</span>
+      </button>
+      <button class="nav-btn" data-tab="rating" onclick="switchTab('rating')">
+        🏆 Рейтинг <span class="badge-soon">Скоро</span>
+      </button>
+    </aside>
+
+    <!— РАБОЧАЯ ОБЛАСТЬ —>
+    <main class="workspace" id="workspace">
+      <!— Содержимое подгружается через app.js —>
+    </main>
+  </div>
+
+  <!— НИЖНЯЯ ПАНЕЛЬ —>
+  <footer class="footer-bar">
+    <div style="font-size: 0.85rem; color: #999;">
+      © 2026 Lingvo Trainer • Образовательная платформа
+    </div>
+    <div class="footer-links">
+      <button class="btn-secondary" onclick="openModal('faqModal')">❓ Частые вопросы (FAQ)</button>
+      <button class="btn-secondary" onclick="openReportModal('Общий вопрос / Предложение')">✉️ Написать в поддержку</button>
+      <button class="btn-secondary" onclick="openModal('rulesModal')">📜 Правила и блокировки</button>
+    </div>
+  </footer>
+
+  <!— МОДАЛЬНОЕ ОКНО: О ПРОЕКТЕ И СТАТИСТИКА —>
+  <div class="modal-overlay" id="aboutModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>О проекте Lingvo Trainer</h3>
+        <button class="close-modal" onclick="closeModal('aboutModal')">×</button>
+      </div>
+      <p style="line-height: 1.6; color: #ccc; margin-bottom: 14px;">
+        Интерактивный тренажер для изучения корейского и английского языков с проверкой произношения, пословным разбором предложений и системой корней слов.
+      </p>
+      <div id="appStatsBox" style="background: #121218; padding: 14px; border-radius: 10px; border: 1px solid #2e2e3d; margin-bottom: 14px;"></div>
+      <button class="btn-primary" onclick="closeModal('aboutModal'); openModal('rulesModal')">Открыть правила сообщества</button>
+    </div>
+  </div>
+
+  <!— МОДАЛЬНОЕ ОКНО: ПРАВИЛА И СИСТЕМА БАНОВ —>
+  <div class="modal-overlay" id="rulesModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>📜 Правила приложения и модерация</h3>
+        <button class="close-modal" onclick="closeModal('rulesModal')">×</button>
+      </div>
+      <div style="font-size: 0.92rem; line-height: 1.6; color: #ddd; display: flex; flex-direction: column; gap: 10px;">
+        <p><strong>1. Уважение:</strong> В общих и личных чатах запрещены оскорбления, травля, токсичность и дискриминация.</p>
+        <p><strong>2. Чистота контента:</strong> Запрещены спам, реклама, сторонние ссылки, политика и материалы 18+.</p>
+        <p><strong>3. Система предупреждений (3 + 1):</strong>
+
+          • <strong>1–3 нарушения:</strong> система выдает официальное предупреждение на аккаунт.
+
+          • <strong>4-е нарушение:</strong> автоматическая временная блокировка доступа к чатам на 24 часа.
+
+          • <strong>Повторные нарушения или попытки взлома:</strong> блокировка аккаунта навсегда без возможности восстановления.</p>
+      </div>
+    </div>
+  </div>
+
+  <!— МОДАЛЬНОЕ ОКНО: FAQ —>
+  <div class="modal-overlay" id="faqModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>❓ Частые вопросы (FAQ)</h3>
+        <button class="close-modal" onclick="closeModal('faqModal')">×</button>
+      </div>
+      <div style="font-size: 0.92rem; line-height: 1.6; color: #ddd; display: flex; flex-direction: column; gap: 12px;">
+        <div><strong>Как работает перевод слов в предложении?</strong>
+Нажмите на любое слово внутри примера предложения в карточке — ниже появится его точный перевод.</div>
+        <div><strong>Не работает микрофон при проверке голоса:</strong>
+Разрешите доступ к микрофону в настройках браузера (Chrome / Edge) и говорите четко после нажатия кнопки 🎙️.</div>
+        <div><strong>Где сохраняются мои слова?</strong>
+Сейчас прогресс сохраняется в памяти вашего устройства. В следующем обновлении появится облачная синхронизация через аккаунт.</div>
+      </div>
+    </div>
+  </div>
+
+  <!— МОДАЛЬНОЕ ОКНО: АККАУНТ И ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ —>
+  <div class="modal-overlay" id="accountModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>👤 Аккаунт и облако</h3>
+        <button class="close-modal" onclick="closeModal('accountModal')">×</button>
+      </div>
+      <div id="authGuestBox">
+        <p style="color:#bbb; font-size:0.9rem; margin-bottom:12px;">
+          Войдите или зарегистрируйтесь, чтобы ваши выученные слова и личный словарь сохранялись в облаке на любом устройстве.
+        </p>
+        <div class="form-group">
+          <label>Электронная почта (Email):</label>
+          <input type="email" id="authEmail" class="input-dark" placeholder="name@example.com" />
+        </div>
+        <div class="form-group">
+          <label>Пароль (минимум 6 символов):</label>
+          <input type="password" id="authPassword" class="input-dark" placeholder="••••••" />
+        </div>
+        <div id="authMsg" style="font-size:0.85rem; margin-bottom:10px; color:#ffb84d;"></div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-primary" style="flex:1;" onclick="authSignIn()">Войти</button>
+          <button class="btn-secondary" style="flex:1;" onclick="authSignUp()">Регистрация</button>
+        </div>
+      </div>
+
+      <div id="authUserBox" style="display:none;">
+        <div style="background:#121218; padding:12px; border-radius:10px; border:1px solid #2ecc71; margin-bottom:14px;">
+          <div style="color:#2ecc71; font-weight:600;">✅ Облачная синхронизация активна</div>
+          <div id="userEmailLabel" style="color:#fff; margin-top:4px; font-size:0.95rem;"></div>
+        </div>
+        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="syncToCloud(true)">🔄 Синхронизировать сейчас</button>
+        <button class="btn-primary" style="width:100%;" onclick="authSignOut()">Выйти из аккаунта</button>
+      </div>
+    </div>
+  </div>
+
+  <!— МОДАЛЬНОЕ ОКНО: СООБЩИТЬ ОБ ОШИБКЕ / ПОДДЕРЖКА —>
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✉️ Сообщить об ошибке / Поддержка</h3>
+        <button class="close-modal" onclick="closeModal('reportModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label>Тема / Карточка слова:</label>
+        <input type="text" id="reportSubject" class="input-dark" readonly />
+      </div>
+      <div class="form-group">
+        <label>Ваша почта для ответа:</label>
+        <input type="email" id="reportUserEmail" class="input-dark" placeholder="example@mail.ru" />
+      </div>
+      <div class="form-group">
+        <label>Опишите ошибку или вопрос:</label>
+        <textarea id="reportText" class="textarea-dark" placeholder="Например: в слове опечатка или неверный перевод..."></textarea>
+      </div>
+      <button class="btn-primary" style="width: 100%;" onclick="sendReportEmail()">Отправить на trenazer.support@gmail.com</button>
+    </div>
+  </div>
+
+  <!— МОДАЛЬНОЕ ОКНО: ДОБАВИТЬ СВОЕ СЛОВО —>
+  <div class="modal-overlay" id="addWordModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>➕ Добавить новое слово</h3>
+        <button class="close-modal" onclick="closeModal('addWordModal')">×</button>
+      </div>
+      <div class="form-group">
+        <label>Слово:</label>
+        <input type="text" id="newWordOrig" class="input-dark" placeholder="Например: 행복 или Freedom" />
+      </div>
+      <div class="form-group">
+        <label>Транскрипция:</label>
+        <input type="text" id="newWordTranslit" class="input-dark" placeholder="Например: хэнбок или [ˈfriːdəm]" />
+      </div>
+      <div class="form-group">
+        <label>Перевод:</label>
+        <input type="text" id="newWordMeaning" class="input-dark" placeholder="Счастье / Свобода" />
+      </div>
+      <div class="form-group">
+        <label>Категория:</label>
+        <input type="text" id="newWordCat" class="input-dark" placeholder="Базовые, Эмоции, Еда..." />
+      </div>
+      <div class="form-group">
+        <label>Пример предложения:</label>
+        <input type="text" id="newWordEx" class="input-dark" placeholder="Пример использования слова" />
+      </div>
+      <div class="form-group">
+        <label>Перевод примера:</label>
+        <input type="text" id="newWordExTr" class="input-dark" placeholder="Перевод предложения" />
+      </div>
+      <button class="btn-primary" style="width: 100%;" onclick="saveNewWord()">Сохранить слово</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
