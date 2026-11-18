@@ -1552,11 +1552,11 @@ async function sendReportEmail() {
   }
 
   try {
-    const res = await fetch(`https://formsubmit.co{SUPPORT_EMAIL}`, {
+    const res = await fetch('https://formsubmit.co', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        _subject: `Lingvo Trainer: ${subj}`,
+        _subject: 'Lingvo Trainer: ' + subj,
         Тема: subj,
         Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
         Почта_для_ответа: userMail || 'Не указана',
@@ -1579,10 +1579,3 @@ async function sendReportEmail() {
     }
   }
 }
-  const fullBody = `Тема: ${subj}\nЯзык тренажёра: ${curLang === 'ko' ? 'Корейский' : 'Английский'}\nПочта пользователя для ответа: ${userMail || 'не указана'}\n\nСообщение:\n${msg}`;
-  const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Lingvo Trainer: ' + subj)}&body=${encodeURIComponent(fullBody)}`;
-
-  window.location.href = mailtoUrl;
-  if (typeof closeModal === 'function') closeModal('reportModal');
-
-
