@@ -924,7 +924,7 @@ function renderWordRowCompact(item) {
       </div>
       <div class="word-row-actions">
         <button class="icon-circle-btn" title="Проверить произношение" onclick="checkSpeech('${safeWord}', this, '${item.id}')">🎙️</button>
-        <button class="icon-circle-btn" title="Проверить произношение" onclick="checkSpeech('${safeWord}', this)">🎙️</button>
+        <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${safeWord}')">🔊</button>
         <div class="dots-wrapper">
           <button class="icon-circle-btn" title="Действия" onclick="toggleDotsMenu('${item.id}', event)">⋮</button>
           <div class="dots-menu ${isOpen ? 'open' : ''}" onclick="event.stopPropagation()">
