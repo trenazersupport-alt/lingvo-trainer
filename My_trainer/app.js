@@ -1453,5 +1453,72 @@ render = function() {
     </div>
   `;
 };
+// ОБНОВЛЕННЫЙ РАЗДЕЛ «ТРЕНИРОВКА ПРОИЗНОШЕНИЯ» (БЕЗ UNDEFINED И С РАБОЧИМИ КНОПКАМИ)
+let voiceWordId = '';
+
+const _origRenderForVoice = render;
+render = function() {
+  if (curTab !== 'voice') return _origRenderForVoice();
+  const ws = document.getElementById('workspace');
+  const pool = getAllWords().filter(w => w.ex && w.ex.trim().length > 0);
+  const list = pool.length ? pool : getAllWords();
+
+  let item = list.find(w => w.id === voiceWordId) || list.at(0);
+  if (item) voiceWordId = item.id;
+
+  if (!item) {
+    ws.innerHTML = '<div class="section-header"><h2>🎙️ Тренировка произношения</h2></div><p style="color:#999;">Нет слов для тренировки.</p>';
+    return;
+  }
+
+  const isLearned = learnedIds.includes(item.id);
+  const isHard = hardIds.includes(item.id);
+  const isPersonal = personalIds.includes(item.id);
+  const safeWord = item.word.replace(/'/g, "\\'");
+  const safeEx = (item.ex || '').replace(/'/g, "\\'");
+
+  ws.innerHTML = `
+    <div class="section-header">
+      <h2>🎙️ Тренировка произношения</h2>
+      <button class="btn-primary" onclick="nextVoiceWord()">🔄 Следующее слово</button>
+    </div>
+    <div class="word-card ${isLearned ? 'learned' : ''}" style="max-width:760px;">
+      <div class="card-top">
+        <div>
+          <div class="word-main">${item.word}</div>
+          <div class="word-translit">${item.translit || ''}</div>
+        </div>
+        <button class="action-chip" onclick="speakText('${safeWord}')">🔊 Слово</button>
+      </div>
+      <div class="word-meaning">${item.meaning}</div>
+      <div style="font-size:0.85rem; color:#888; margin-bottom:12px;">${item.cat || ''}</div>
+      ${item.ex ? `
+        <div class="example-box">
+          <div style="font-size:1.05rem; color:#fff; margin-bottom:4px;">${item.ex}</div>
+          <div style="font-size:0.9rem; color:#aaa;">${item.exTr || ''}</div>
+        </div>
+      ` : ''}
+      <div id="speech_${item.id}" style="margin:10px 0; font-weight:600; min-height:22px;"></div>
+      <div class="card-actions">
+        ${item.ex ? `<button class="action-chip" onclick="speakText('${safeEx}')">🔊 Пример</button>` : ''}
+        <button class="action-chip" onclick="checkSpeech('${safeWord}', '${item.id}')">🎙️ Слово</button>
+        ${item.ex ? `<button class="action-chip" onclick="checkSpeech('${safeEx}', '${item.id}')">🎙️ Фраза</button>` : ''}
+        <button class="action-chip ${isLearned ? 'learned-active' : ''}" onclick="toggleLearned('${item.id}')">${isLearned ? '✅ Выучено' : '⬜ Выучить'}</button>
+        <button class="action-chip" style="${isHard ? 'border-color:#ffb84d; color:#ffb84d;' : ''}" onclick="toggleHard('${item.id}')">${isHard ? '🔁 Повторю позже' : '🕒 Повторить позже'}</button>
+        <button class="action-chip" onclick="togglePersonal('${item.id}')">${isPersonal ? '★ В личном' : '☆ В личный'}</button>
+        <button class="action-chip" style="color:#ff7b7b;" onclick="openReport('${safeWord}')">🚩 Ошибка</button>
+      </div>
+    </div>
+  `;
+};
+function nextVoiceWord() {
+  const pool = getAllWords().filter(w => w.ex && w.ex.trim().length > 0);
+  const list = pool.length ? pool : getAllWords();
+  if (list.length <= 1) return;
+  let next = list.at(Math.floor(Math.random() * list.length));
+  if (next.id === voiceWordId) next = list.at((list.indexOf(next) + 1) % list.length);
+  voiceWordId = next.id;
+  render();
+}
 
 
