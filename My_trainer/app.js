@@ -1522,5 +1522,18 @@ function nextVoiceWord() {
   voiceWordId = next.id;
   render();
 }
+// ОТПРАВКА СООБЩЕНИЙ ОБ ОШИБКАХ И ОБРАЩЕНИЙ В ПОДДЕРЖКУ НА ПОЧТУ
+const SUPPORT_EMAIL = 'trenazersupport@gmail.com';
+
+function sendToSupportMail(subject, bodyText) {
+  const mailtoUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+  window.location.href = mailtoUrl;
+}
+function openReport(wordText) {
+  const comment = prompt(`⚠️ Сообщить об ошибке в слове/фразе: «${wordText}»\n\nОпишите, что именно не так (перевод, транскрипция или озвучка):`);
+  if (comment === null) return;
+  const body = `Слово / фраза: ${wordText}\nЯзык: ${curLang === 'ko' ? 'Корейский' : 'Английский'}\nОписание ошибки: ${comment || 'Не указано'}`;
+  sendToSupportMail(`Lingvo Trainer: Ошибка в слове «${wordText}»`, body);
+}
 
 
