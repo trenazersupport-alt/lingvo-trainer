@@ -1534,8 +1534,7 @@ function openReport(wordText) {
   if (textEl) textEl.value = '';
   if (typeof openModal === 'function') openModal('reportModal');
 }
-
-async function sendReportEmail() {
+function sendReportEmail() {
   const subj = (document.getElementById('reportSubject')?.value || 'Обращение в поддержку').trim();
   const userMail = (document.getElementById('reportUserEmail')?.value || '').trim();
   const msg = (document.getElementById('reportText')?.value || '').trim();
@@ -1544,38 +1543,41 @@ async function sendReportEmail() {
     return alert('Пожалуйста, опишите ошибку или ваш вопрос перед отправкой.');
   }
 
-  const btn = document.querySelector('#reportModal .btn-primary');
-  const oldText = btn ? btn.textContent : '';
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Отправляем письмо...';
+  let iframe = document.getElementById('hidden_mail_frame');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.name = 'hidden_mail_frame';
+    iframe.id = 'hidden_mail_frame';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
   }
 
-  try {
-    const res = await fetch('https://formsubmit.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: 'Lingvo Trainer: ' + subj,
-        Тема: subj,
-        Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
-        Почта_для_ответа: userMail || 'Не указана',
-        Сообщение: msg
-      })
-    });
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = 'https://formsubmit.co';
+  form.target = 'hidden_mail_frame';
 
-    if (res.ok) {
-      alert('✅ Сообщение успешно отправлено на trenazer.support@gmail.com!');
-      if (typeof closeModal === 'function') closeModal('reportModal');
-    } else {
-      alert('⚠️ Не удалось отправить письмо. Попробуйте чуть позже.');
-    }
-  } catch (e) {
-    alert('⚠️ Ошибка сети при отправке. Проверьте интернет-соединение.');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = oldText;
-    }
-  }
+  const fields = {
+    _subject: 'Lingvo Trainer: ' + subj,
+    _captcha: 'false',
+    Тема: subj,
+    Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
+    Почта_для_ответа: userMail || 'Не указана',
+    Сообщение: msg
+  };
+
+  Object.entries(fields).forEach(([key, val]) => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = key;
+    inp.value = val;
+    form.appendChild(inp);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+
+  alert('✅ Сообщение отправлено на trenazer.support@gmail.com!\n(Если вы отправляете впервые, проверьте почту и папку «Спам» для подтверждения формы).');
+  if (typeof closeModal === 'function') closeModal('reportModal');
 }
