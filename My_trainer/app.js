@@ -1274,3 +1274,173 @@ render = function() {
     </div>
   `;
 };
+// ИНТЕРАКТИВНЫЕ УРОКИ ГРАММАТИКИ (ТЕОРИЯ + МИКРОФОН + МИНИ-ТЕСТ)
+let selGrammarMod = '';
+let selGrammarLesson = '';
+let completedLessons = JSON.parse(localStorage.getItem('lt_done_lessons') || '[]');
+let lessonQuizAnswers = {};
+
+function answerLessonQuiz(lessonId, qIdx, optIdx, correctIdx, btnEl) {
+  const parent = btnEl.parentElement;
+  parent.querySelectorAll('button').forEach(b => {
+    b.style.borderColor = '#3c3c4e';
+    b.style.background = '#22222e';
+  });
+  if (optIdx === correctIdx) {
+    btnEl.style.borderColor = '#2ecc71';
+    btnEl.style.background = '#1e5c30';
+    lessonQuizAnswers[lessonId + '_' + qIdx] = true;
+  } else {
+    btnEl.style.borderColor = '#ff4747';
+    btnEl.style.background = '#6e1919';
+    lessonQuizAnswers[lessonId + '_' + qIdx] = false;
+  }
+}
+
+function finishGrammarLesson(lessonId, totalQ) {
+  let correctCount = 0;
+  for (let i = 0; i < totalQ; i++) {
+    if (lessonQuizAnswers[lessonId + '_' + i]) correctCount++;
+  }
+  const resEl = document.getElementById('lessonFinishMsg');
+  if (correctCount < totalQ) {
+    if (resEl) {
+      resEl.style.color = '#ffb84d';
+      resEl.textContent = `⚠️ Правильных ответов: ${correctCount} из ${totalQ}. Исправьте ошибки, чтобы завершить урок!`;
+    }
+    return;
+  }
+  if (!completedLessons.includes(lessonId)) {
+    completedLessons.push(lessonId);
+    localStorage.setItem('lt_done_lessons', JSON.stringify(completedLessons));
+  }
+  if (resEl) {
+    resEl.style.color = '#2ecc71';
+    resEl.textContent = '🎉 Поздравляем! Урок успешно пройден и сохранён в прогрессе!';
+  }
+}
+
+const _origRenderForGrammar = render;
+render = function() {
+  if (curTab !== 'grammar') return _origRenderForGrammar();
+  const ws = document.getElementById('workspace');
+  const modules = (typeof grammarCourse !== 'undefined' && grammarCourse[curLang]) ? grammarCourse[curLang] : [];
+
+  // 1. ЭКРАН ВЫБОРА МОДУЛЯ
+  if (!selGrammarMod) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>📖 Грамматика и уроки (${curLang === 'ko' ? 'Корейский' : 'Английский'})</h2>
+      </div>
+      <div class="cat-grid">
+        ${modules.map(m => {
+          const doneCount = m.lessons.filter(l => completedLessons.includes(l.id)).length;
+          return `
+            <div class="cat-tile" onclick="selGrammarMod='${m.id}'; selGrammarLesson=''; render()">
+              <div>
+                <div style="font-size:1.7rem; margin-bottom:8px;">${m.icon}</div>
+                <div class="cat-tile-title">${m.title}</div>
+                <div class="cat-tile-sub">${m.desc}</div>
+              </div>
+              <div style="margin-top:14px; font-size:0.85rem; color:${doneCount === m.lessons.length ? '#2ecc71' : '#ff6b6b'}; font-weight:600;">
+                Пройдено уроков: ${doneCount} из ${m.lessons.length} →
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  const modObj = modules.find(m => m.id === selGrammarMod);
+  if (!modObj) { selGrammarMod = ''; return render(); }
+
+  // 2. ЭКРАН СПИСКА УРОКОВ ВНУТРИ МОДУЛЯ
+  if (!selGrammarLesson) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button class="btn-secondary" onclick="selGrammarMod=''; render()">← К модулям</button>
+          <h2>${modObj.icon} ${modObj.title}</h2>
+        </div>
+      </div>
+      <div class="word-list">
+        ${modObj.lessons.map(l => {
+          const isDone = completedLessons.includes(l.id);
+          return `
+            <div class="word-row ${isDone ? 'is-learned' : ''}" style="cursor:pointer;" onclick="selGrammarLesson='${l.id}'; render()">
+              <div class="word-row-info">
+                <div class="word-row-orig" style="font-size:1.1rem;">${l.title}</div>
+                <div style="font-size:0.85rem; color:#aaa; margin-top:4px;">Теория • Произношение • Мини-тест (${l.quiz.length} вопр.)</div>
+              </div>
+              <div style="font-weight:700; color:${isDone ? '#2ecc71' : '#ff6b6b'};">
+                ${isDone ? '✅ Пройдено' : 'Начать →'}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  // 3. ЭКРАН САМОГО УРОКА (ТЕОРИЯ + МИКРОФОН + ТЕСТ)
+  const les = modObj.lessons.find(l => l.id === selGrammarLesson);
+  if (!les) { selGrammarLesson = ''; return render(); }
+  const safeSpeak = les.speakTarget.replace(/'/g, "\\'");
+
+  ws.innerHTML = `
+    <div class="section-header">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="selGrammarLesson=''; render()">← К урокам</button>
+        <h2>${les.title}</h2>
+      </div>
+    </div>
+
+    <div class="game-box" style="max-width:760px; text-align:left; margin-bottom:18px;">
+      <h3 style="color:#ff6b6b; margin-bottom:10px;">📘 1. Теория и примеры</h3>
+      <p style="color:#ddd; line-height:1.6; margin-bottom:14px;">${les.theory}</p>
+      <div class="word-list">
+        ${les.items.map(it => `
+          <div class="word-row" style="background:#1b1b26;">
+            <div class="word-row-info">
+              <div class="word-row-top">
+                <span class="word-row-orig">${it.char}</span>
+                <span class="word-row-tr">${it.tr}</span>
+              </div>
+              <div class="word-row-mean" style="font-size:0.9rem; color:#bbb;">${it.note}</div>
+            </div>
+            <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${it.char.split('(').split('→').pop().trim().replace(/'/g, "\\'")}')">🔊</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="game-box" style="max-width:760px; text-align:left; margin-bottom:18px;">
+      <h3 style="color:#ffb84d; margin-bottom:10px;">🎙️ 2. Практика произношения</h3>
+      <p style="color:#ccc; margin-bottom:12px;">Прослушайте контрольную фразу и произнесите её в микрофон: <b>${les.speakHint}</b></p>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="speakText('${safeSpeak}')">🔊 Послушать образец</button>
+        <button class="btn-primary" onclick="checkSpeech('${safeSpeak}', this, 'lesson_sp_${les.id}')">🎙️ Произнести в микрофон</button>
+      </div>
+      <div id="speech_res_lesson_sp_${les.id}" style="font-size:0.92rem; margin-top:10px; font-weight:600;"></div>
+    </div>
+
+    <div class="game-box" style="max-width:760px; text-align:left;">
+      <h3 style="color:#2ecc71; margin-bottom:12px;">📝 3. Мини-тест для закрепления</h3>
+      ${les.quiz.map((q, qIdx) => `
+        <div style="margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #2a2a38;">
+          <div style="font-weight:600; color:#fff; margin-bottom:8px;">${qIdx + 1}. ${q.q}</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            ${q.opts.map((opt, oIdx) => `
+              <button class="game-opt-btn" style="padding:9px 14px; font-size:0.9rem;" onclick="answerLessonQuiz('${les.id}', ${qIdx}, ${oIdx}, ${q.ans}, this)">${opt}</button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('')}
+      <button class="btn-primary" style="width:100%;" onclick="finishGrammarLesson('${les.id}', ${les.quiz.length})">✅ Завершить урок и проверить тест</button>
+      <div id="lessonFinishMsg" style="margin-top:10px; font-weight:600; text-align:center;"></div>
+    </div>
+  `;
+};
