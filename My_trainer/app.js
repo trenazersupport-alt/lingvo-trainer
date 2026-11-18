@@ -920,9 +920,10 @@ function renderWordRowCompact(item) {
         </div>
         <div class="word-row-mean">${item.meaning}</div>
         <div style="font-size:0.78rem; color:#777; margin-top:2px;">${item.cat || ''}</div>
+        <div id="speech_res_${item.id}" style="font-size:0.85rem; margin-top:4px; font-weight:600;"></div>
       </div>
       <div class="word-row-actions">
-        <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${safeWord}')">🔊</button>
+        <button class="icon-circle-btn" title="Проверить произношение" onclick="checkSpeech('${safeWord}', this, '${item.id}')">🎙️</button>
         <button class="icon-circle-btn" title="Проверить произношение" onclick="checkSpeech('${safeWord}', this)">🎙️</button>
         <div class="dots-wrapper">
           <button class="icon-circle-btn" title="Действия" onclick="toggleDotsMenu('${item.id}', event)">⋮</button>
@@ -1012,11 +1013,21 @@ render = function() {
     </div>
   `;
 };
-// УЛУЧШЕННАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ НОВОГО СПИСКА СЛОВ
-function checkSpeech(targetWord, btnEl) {
+// ВСТРОЕННАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ БЕЗ ВСПЛЫВАЮЩИХ ОКОН
+function checkSpeech(targetWord, btnEl, itemId) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const resBox = itemId ? document.getElementById('speech_res_' + itemId) : null;
+  const showMsg = (text, color) => {
+    if (resBox) {
+      resBox.textContent = text;
+      resBox.style.color = color;
+    } else {
+      alert(text);
+    }
+  };
+
   if (!SpeechRec) {
-    return alert('Распознавание речи не поддерживается в этом браузере. Откройте сайт в Google Chrome.');
+    return showMsg('⚠️ Распознавание речи не поддерживается. Откройте сайт в Chrome.', '#ff6b6b');
   }
 
   const rec = new SpeechRec();
@@ -1027,31 +1038,27 @@ function checkSpeech(targetWord, btnEl) {
   const oldText = btnEl.textContent;
   btnEl.textContent = '🔴';
   btnEl.style.borderColor = '#ff4747';
+  showMsg('🎙️ Слушаю... Произнесите слово', '#aaa');
 
   rec.onresult = function(event) {
     const said = event.results[0][0].transcript.trim();
     const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '');
     const cleanTarget = targetWord.toLowerCase().replace(/[.,!?]/g, '');
 
-    btnEl.textContent = oldText;
-    btnEl.style.borderColor = '';
-
     if (cleanSaid === cleanTarget || (cleanTarget.includes(cleanSaid) && cleanSaid.length > 1)) {
-      alert(`✅ Отлично! Произнесено верно:\nЭталон: ${targetWord}\nВы сказали: ${said}`);
+      showMsg(`✅ Верно! Распознано: «${said}»`, '#2ecc71');
     } else {
-      alert(`⚠️ Попробуйте ещё раз:\nЭталон: ${targetWord}\nРаспознано: ${said}`);
+      showMsg(`❌ Услышано: «${said}» (Эталон: ${targetWord})`, '#ffb84d');
     }
   };
 
   rec.onerror = function(event) {
-    btnEl.textContent = oldText;
-    btnEl.style.borderColor = '';
     if (event.error === 'not-allowed') {
-      alert('🚫 Доступ к микрофону запрещён. Нажмите на значок замка/настроек слева от адреса сайта и разрешите микрофон.');
+      showMsg('🚫 Разрешите доступ к микрофону в настройках браузера.', '#ff6b6b');
     } else if (event.error === 'no-speech') {
-      alert('🔇 Речь не услышана. Нажмите 🎙️ и произнесите слово громче.');
+      showMsg('🔇 Речь не услышана. Нажмите 🎙️ и скажите громче.', '#ffb84d');
     } else {
-      alert('⚠️ Ошибка микрофона: ' + event.error);
+      showMsg('⚠️ Ошибка микрофона: ' + event.error, '#ff6b6b');
     }
   };
 
@@ -1066,4 +1073,3 @@ function checkSpeech(targetWord, btnEl) {
     btnEl.textContent = oldText;
   }
 }
-
