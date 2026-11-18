@@ -1076,3 +1076,112 @@ function checkSpeech(targetWord, btnEl, itemId) {
   }
 }
 if (typeof switchTab === 'function') switchTab(curTab);
+// ДИЗАЙН ЛИЧНОГО СЛОВАРЯ (ТОЛЬКО РАЗДЕЛЫ С ДОБАВЛЕННЫМИ СЛОВАМИ + МОИ СЛОВА)
+let mySelectedGroup = '';
+let mySelectedSubCat = 'all';
+
+const _origRenderForMyDict = render;
+render = function() {
+  if (curTab !== 'myDict') return _origRenderForMyDict();
+  const ws = document.getElementById('workspace');
+  const myWords = getAllWords().filter(w => personalIds.includes(w.id) || String(w.id).startsWith('custom_'));
+
+  if (!myWords.length) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>⭐ Личный словарь (0)</h2>
+        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
+      </div>
+      <div class="game-box" style="margin-top:20px;">
+        <p style="color:#ccc; line-height:1.6;">
+          В вашем личном словаре пока пусто.<br>
+          Добавьте слова через меню <b>«⋮ → ☆ В свой словарь»</b> в <b>Базе слов</b> или создайте свою карточку кнопкой <b>«➕ Добавить слово»</b> — и здесь автоматически появятся нужные разделы!
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const activeGroups = [];
+  WORD_GROUPS_LIST.forEach(g => {
+    const count = myWords.filter(w => w.group === g.id).length;
+    if (count > 0) activeGroups.push({ ...g, count });
+  });
+
+  const customOnly = myWords.filter(w => !w.group || !WORD_GROUPS_LIST.some(g => g.id === w.group));
+  if (customOnly.length > 0) {
+    activeGroups.push({
+      id: 'custom_group',
+      title: 'Мои созданные слова',
+      icon: '✨',
+      desc: 'Карточки, добавленные вами вручную',
+      count: customOnly.length
+    });
+  }
+
+  if (!mySelectedGroup && !searchQuery.trim()) {
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>⭐ Личный словарь (${myWords.length})</h2>
+        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" style="display:none" aria-hidden="true" />
+        <input type="password" style="display:none" aria-hidden="true" />
+        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="my_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск по личному словарю..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+      </div>
+      <div class="cat-grid">
+        ${activeGroups.map(g => `
+          <div class="cat-tile" onclick="mySelectedGroup='${g.id}'; mySelectedSubCat='all'; render()">
+            <div>
+              <div style="font-size:1.6rem; margin-bottom:8px;">${g.icon}</div>
+              <div class="cat-tile-title">${g.title || g.id}</div>
+              <div class="cat-tile-sub">${g.desc}</div>
+            </div>
+            <div style="margin-top:12px; font-size:0.85rem; color:#ff6b6b; font-weight:600;">Добавлено слов: ${g.count} →</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  let list = myWords;
+  let headerTitle = 'Результаты поиска';
+  if (mySelectedGroup === 'custom_group') {
+    list = customOnly;
+    headerTitle = '✨ Мои созданные слова';
+  } else if (mySelectedGroup) {
+    list = myWords.filter(w => w.group === mySelectedGroup);
+    headerTitle = mySelectedGroup;
+  }
+
+  const subCats = [...new Set(list.map(w => w.cat).filter(Boolean))];
+  if (mySelectedSubCat !== 'all') list = list.filter(w => w.cat === mySelectedSubCat);
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    list = list.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+  }
+
+  ws.innerHTML = `
+    <div class="section-header">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn-secondary" onclick="mySelectedGroup=''; searchQuery=''; render()">← К разделам</button>
+        <h2>${headerTitle} (${list.length})</h2>
+      </div>
+      <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
+    </div>
+    <div class="toolbar">
+      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="my_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в разделе..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
+      ${subCats.length ? `
+        <select class="select-dark" onchange="mySelectedSubCat=this.value; render()">
+          <option value="all" ${mySelectedSubCat === 'all' ? 'selected' : ''}>Все подтемы</option>
+          ${subCats.map(c => `<option value="${c}" ${mySelectedSubCat === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+      ` : ''}
+    </div>
+    <div class="word-list">
+      ${list.length ? list.map(renderWordRowCompact).join('') : '<p style="color:#999;">В этой подтеме пока нет слов.</p>'}
+    </div>
+  `;
+};
