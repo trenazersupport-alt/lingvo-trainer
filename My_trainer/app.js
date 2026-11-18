@@ -192,7 +192,7 @@ const grammarData = {
 // ПЕРЕКЛЮЧЕНИЕ ЯЗЫКА И ВКЛАДОК
 function setLang(lang) {
   curLang = lang;
-  localStorage.setItem('lt_cur_lang', lang);)
+  localStorage.setItem('lt_cur_lang', lang);
   selectedCat = 'all';
   document.body.className = lang === 'ko' ? 'lang-ko' : 'lang-en';
   document.getElementById('btnLangKo').classList.toggle('active', lang === 'ko');
