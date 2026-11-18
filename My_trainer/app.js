@@ -635,4 +635,98 @@ function importBackup(event) {
   reader.readAsText(file);
   event.target.value = '';
 }
+// ДВИЖОК ИГРЫ: ВОПРОС — ОТВЕТ НА ВРЕМЯ
+let gameState = { active: false, lang: 'ko', score: 0, combo: 0, timeLeft: 60, timerId: null, currentQ: null };
+let gameBestScore = parseInt(localStorage.getItem('lt_game_best') || '0', 10);
+
+function renderGameScreen(ws) {
+  if (!gameState.active) {
+    ws.innerHTML = `
+      <div class="section-header"><h2>🎮 Игра: Вопрос — Ответ на время</h2></div>
+      <div class="game-box">
+        <p style="color:#ccc; line-height:1.6; margin-bottom:16px;">
+          У тебя есть <b>60 секунд</b>, чтобы перевести как можно больше слов! За правильные ответы подряд начисляются бонусные очки.
+        </p>
+        <div style="font-size:1.1rem; color:#ffb84d; margin-bottom:18px;">🏆 Личный рекорд: <b>${gameBestScore}</b> очков</div>
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="startQuizGame('ko')">🇰🇷 Играть (Корейский)</button>
+          <button class="btn-primary" onclick="startQuizGame('en')">🇬🇧 Играть (Английский)</button>
+        </div>
+      </div>
+    `;
+  } else {
+    const q = gameState.currentQ;
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>🎮 Раунд: ${gameState.lang === 'ko' ? 'Корейский' : 'Английский'}</h2>
+        <button class="btn-secondary" onclick="stopQuizGame()">⏹ Завершить</button>
+      </div>
+      <div class="game-box">
+        <div class="game-hud">
+          <span>⏱ Время: <b id="gameTimerVal" style="color:#ff6b6b;">${gameState.timeLeft}</b>с</span>
+          <span>🔥 Серия: <b>${gameState.combo}</b></span>
+          <span>⭐ Очки: <b>${gameState.score}</b></span>
+        </div>
+        <div class="game-question">${q.word}</div>
+        <div style="color:#ff6b6b; font-size:0.95rem;">${q.translit || ''}</div>
+        <button class="action-chip" style="margin-top:10px;" onclick="speakText('${q.word.replace(/'/g, "\\'")}')">🔊 Прослушать</button>
+        <div class="game-options">
+          ${q.options.map((opt, idx) => `<button class="game-opt-btn" id="gopt_${idx}" onclick="answerQuiz(${idx})">${opt}</button>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+}
+
+function startQuizGame(lang) {
+  const pool = [...baseWords[lang], ...(customWords[lang] || [])];
+  if (pool.length < 2) return alert('Добавьте хотя бы 2 слова в словарь для старта игры!');
+  clearInterval(gameState.timerId);
+  gameState = { active: true, lang, score: 0, combo: 0, timeLeft: 60, timerId: null, currentQ: null };
+  nextQuizQuestion();
+  gameState.timerId = setInterval(() => {
+    gameState.timeLeft--;
+    const el = document.getElementById('gameTimerVal');
+    if (el) el.textContent = gameState.timeLeft;
+    if (gameState.timeLeft <= 0) stopQuizGame(true);
+  }, 1000);
+}
+
+function nextQuizQuestion() {
+  const pool = [...baseWords[gameState.lang], ...(customWords[gameState.lang] || [])];
+  const target = pool[Math.floor(Math.random() * pool.length)];
+  const distractors = pool.filter(w => w.id !== target.id).map(w => w.meaning).sort(() => 0.5 - Math.random()).slice(0, 3);
+  const options = [target.meaning, ...distractors].sort(() => 0.5 - Math.random());
+  gameState.currentQ = { ...target, options, correctIdx: options.indexOf(target.meaning) };
+  render();
+}
+
+function answerQuiz(idx) {
+  const btn = document.getElementById('gopt_' + idx);
+  if (!btn || btn.disabled) return;
+  document.querySelectorAll('.game-opt-btn').forEach(b => b.disabled = true);
+  if (idx === gameState.currentQ.correctIdx) {
+    btn.classList.add('correct');
+    gameState.combo++;
+    gameState.score += 10 + (gameState.combo * 2);
+  } else {
+    btn.classList.add('wrong');
+    const rightBtn = document.getElementById('gopt_' + gameState.currentQ.correctIdx);
+    if (rightBtn) rightBtn.classList.add('correct');
+    gameState.combo = 0;
+  }
+  setTimeout(() => { if (gameState.active) nextQuizQuestion(); }, 550);
+}
+
+function stopQuizGame(isTimeUp = false) {
+  clearInterval(gameState.timerId);
+  const finalScore = gameState.score;
+  gameState.active = false;
+  if (finalScore > gameBestScore) {
+    gameBestScore = finalScore;
+    localStorage.setItem('lt_game_best', String(gameBestScore));
+  }
+  render();
+  if (isTimeUp) alert(`⏱ Время вышло! Твой результат: ${finalScore} очков (Рекорд: ${gameBestScore})`);
+}
 
