@@ -486,6 +486,8 @@ function render() {
     `;
   } else if (curTab === 'game') {
     renderGameScreen(ws);
+  } else if (curTab === 'repeatGame') {
+    renderRepeatVoiceScreen(ws);
   } else {
     const titles = {
       video: '🎬 Видеоразборы фраз из дорам и интервью',
@@ -741,5 +743,136 @@ function stopQuizGame(isTimeUp = false) {
   }
   render();
   if (isTimeUp) alert(`⏱ Время вышло! Твой результат: ${finalScore} очков (Рекорд: ${gameBestScore})`);
+}
+// ГОЛОСОВОЕ ПОВТОРЕНИЕ НА ВРЕМЯ (ДО 20 СЛОВ, 3 ПОПЫТКИ, СЛОЖНЫЕ СЛОВА)
+let repSession = { active: false, queue: [], fails: {}, timeLeft: 25, maxTime: 25, timerId: null, passed: 0, msg: '' };
+
+function renderRepeatVoiceScreen(ws) {
+  const all = getAllWords();
+  const candidates = all.filter(w => learnedIds.includes(w.id) || hardIds.includes(w.id));
+
+  if (!repSession.active) {
+    ws.innerHTML = `
+      <div class="section-header"><h2>🔁 Повторение пройденного голосом</h2></div>
+      <div class="game-box">
+        <p style="color:#ccc; line-height:1.6; margin-bottom:14px;">
+          Система берет до <b>20 слов</b> из твоих выученных и отмеченных «Повторить позже». Тебе показывают перевод — нужно успеть произнести слово вслух за отведенное время.
+        </p>
+        <div style="color:#ffb84d; margin-bottom:16px;">
+          Доступно для повторения (${curLang === 'ko' ? 'Корейский' : 'Английский'}): <b>${candidates.length}</b> слов (из них сложных: <b>${all.filter(w => hardIds.includes(w.id)).length}</b>)
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="startRepeatSession(20)">▶️ Старт (20 сек / слово)</button>
+          <button class="btn-primary" onclick="startRepeatSession(30)">▶️ Старт (30 сек / слово)</button>
+        </div>
+      </div>
+    `;
+  } else {
+   const cur = repSession.queue[0];
+    const failsCount = repSession.fails[cur.id] || 0;
+    ws.innerHTML = `
+      <div class="section-header">
+        <h2>🔁 Осталось слов: ${repSession.queue.length} • Пройдено: ${repSession.passed}</h2>
+        <button class="btn-secondary" onclick="stopRepeatSession()">⏹ Завершить</button>
+      </div>
+      <div class="game-box">
+        <div class="game-hud">
+          <span>⏱ Время: <b id="repTimerVal" style="color:#ff6b6b;">${repSession.timeLeft}</b>с</span>
+          <span>⚠️ Попытка: <b>${failsCount + 1} из 3</b></span>
+          <span>${hardIds.includes(cur.id) ? '🔥 Сложное слово' : '✅ Изученное'}</span>
+        </div>
+        <div style="color:#aaa; font-size:0.9rem;">Произнеси на ${curLang === 'ko' ? 'корейском' : 'английском'}:</div>
+        <div class="game-question">${cur.meaning}</div>
+        <div style="color:#888; font-size:0.85rem; margin-bottom:16px;">Категория: ${cur.cat}</div>
+        <button class="btn-primary" style="font-size:1.1rem; padding:14px 24px;" onclick="speakAnswerForRepeat(this)">
+          🎙️ Нажать и произнести
+        </button>
+        <div id="repFeedback" style="margin-top:14px; font-size:0.95rem; color:#ffb84d;">${repSession.msg}</div>
+      </div>
+    `;
+  }
+}
+function startRepeatSession(sec) {
+  const all = getAllWords();
+  let pool = all.filter(w => hardIds.includes(w.id) || learnedIds.includes(w.id));
+  if (!pool.length) pool = [...all];
+  const queue = pool.sort(() => 0.5 - Math.random()).slice(0, 20);
+  clearInterval(repSession.timerId);
+  repSession = { active: true, queue, fails: {}, timeLeft: sec, maxTime: sec, timerId: null, passed: 0, msg: '' };
+  startRepeatWordTimer();
+  render();
+}
+
+function startRepeatWordTimer() {
+  clearInterval(repSession.timerId);
+  repSession.timeLeft = repSession.maxTime;
+  repSession.timerId = setInterval(() => {
+    repSession.timeLeft--;
+    const el = document.getElementById('repTimerVal');
+    if (el) el.textContent = repSession.timeLeft;
+    if (repSession.timeLeft <= 0) handleRepeatMiss('⏱ Время вышло!');
+  }, 1000);
+}
+
+function handleRepeatMiss(reason) {
+  const cur = repSession.queue.shift();
+  const count = (repSession.fails[cur.id] || 0) + 1;
+  repSession.fails[cur.id] = count;
+
+  if (count >= 3) {
+    if (!hardIds.includes(cur.id)) hardIds.push(cur.id);
+    hardStreak[cur.id] = 0;
+    localStorage.setItem('lt_hard', JSON.stringify(hardIds));
+    localStorage.setItem('lt_hard_streak', JSON.stringify(hardStreak));
+    repSession.msg = `❗ 3 ошибки на слове «${cur.word}» (${cur.translit}). Оно добавлено в «Сложные» для следующих повторений!`;
+  } else {
+    repSession.queue.push(cur);
+    repSession.msg = `${reason} Слово «${cur.word}» перенесено в конец очереди (попытка ${count}/3).`;
+  }
+  if (!repSession.queue.length) return stopRepeatSession(true);
+  startRepeatWordTimer();
+  render();
+}
+
+function speakAnswerForRepeat(btnEl) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) return alert('Распознавание речи не поддерживается в этом браузере. Используйте Chrome.');
+  const cur = repSession.queue[0];
+  const rec = new SpeechRec();
+  rec.lang = curLang === 'ko' ? 'ko-KR' : 'en-US';
+  btnEl.textContent = '🎙️ Слушаю...';
+  rec.onresult = (e) => {
+    const said = e.results[0][0].transcript.toLowerCase().replace(/[.,!?]/g, '').trim();
+    const target = cur.word.toLowerCase().replace(/[.,!?]/g, '').trim();
+    if (said === target || (target.includes(said) && said.length > 1)) {
+      repSession.queue.shift();
+      repSession.passed++;
+      if (hardIds.includes(cur.id)) {
+        hardStreak[cur.id] = (hardStreak[cur.id] || 0) + 1;
+        if (hardStreak[cur.id] >= 2) {
+          hardIds = hardIds.filter(x => x !== cur.id);
+          delete hardStreak[cur.id];
+        }
+        localStorage.setItem('lt_hard', JSON.stringify(hardIds));
+        localStorage.setItem('lt_hard_streak', JSON.stringify(hardStreak));
+      }
+      repSession.msg = `✅ Верно! «${cur.word}» засчитано.`;
+      if (!repSession.queue.length) return stopRepeatSession(true);
+      startRepeatWordTimer();
+      render();
+    } else {
+      handleRepeatMiss(`❌ Услышано «${said}».`);
+    }
+  };
+  rec.onerror = () => { btnEl.textContent = '🎙️ Нажать и произнести'; };
+  rec.start();
+}
+
+function stopRepeatSession(finished = false) {
+  clearInterval(repSession.timerId);
+  const done = repSession.passed;
+  repSession.active = false;
+  render();
+  if (finished) alert(`🎉 Тренировка завершена! Уверенно произнесено слов: ${done}.`);
 }
 
