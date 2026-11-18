@@ -1459,3 +1459,5 @@ render = function() {
     </div>
   `;
 };
+}
+
