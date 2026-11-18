@@ -599,3 +599,49 @@ max-width: 860px {
     white-space: nowrap;
   }
 }
+/* ИГРА ВОПРОС-ОТВЕТ */
+.game-box {
+  max-width: 620px;
+  margin: 0 auto;
+  background: #14141d;
+  border: 1px solid rgba(255, 71, 71, 0.35);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+.game-hud {
+  display: flex;
+  justify-content: space-between;
+  background: #1d1d28;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+.game-question {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 16px 0 8px;
+}
+.game-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+.game-opt-btn {
+  background: #22222e;
+  border: 1px solid #3c3c4e;
+  color: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.game-opt-btn:hover { background: #303042; border-color: #ff5e5e; }
+.game-opt-btn.correct { background: #1e7e34; border-color: #2ecc71; }
+.game-opt-btn.wrong { background: #8f1111; border-color: #ff4d4d; }
+@media (max-width: 600px) { .game-options { grid-template-columns: 1fr; } }
