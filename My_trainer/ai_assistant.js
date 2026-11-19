@@ -499,3 +499,162 @@ async function handleChatSubmit() {
   inp.value = '';
   pushSocialMessage(text, null);
 }
+function renderMessageListHtml(messages) {
+  return messages.map(function(m) {
+    const isOwn = m.senderId === ltUserProfile.id;
+    const cardHtml = m.wordCard
+      ? '<div class="lt-word-card-attach">' +
+          '<div style="font-weight:600; color:#fff;">' + m.wordCard.word + ' <span style="color:#9ea4b0; font-weight:400;">' + m.wordCard.translit + '</span></div>' +
+          '<div style="color:#cfd3dc; font-size:0.85rem; margin-top:2px;">' + m.wordCard.meaning + '</div>' +
+          '<div style="color:#7c818d; font-size:0.74rem; margin-top:4px;">Раздел: ' + m.wordCard.cat + '</div>' +
+        '</div>'
+      : '';
+    return '<div class="lt-msg-row ' + (isOwn ? 'own' : 'other') + '">' +
+      '<div class="lt-msg-meta"><span>' + (isOwn ? 'Вы' : m.senderName) + '</span><span>' + m.time + '</span></div>' +
+      '<div class="lt-msg-bubble"><div>' + m.text + '</div>' + cardHtml + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+const _origRenderForChat = window.render;
+window.render = function() {
+  updateGlobalUnreadDot();
+  if (typeof curTab !== 'undefined' && curTab !== 'chat' && curTab !== 'chats') {
+    return typeof _origRenderForChat === 'function' ? _origRenderForChat() : undefined;
+  }
+
+  const ws = document.getElementById('workspace');
+  if (!ws) return;
+  const isBanned = chatBanUntil > Date.now();
+
+  const profileStripHtml =
+    '<div style="max-width:960px; margin:0 auto 14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; padding:12px 18px; background:#14151a; border:1px solid rgba(255,255,255,0.08); border-radius:14px;">' +
+      '<div style="display:flex; align-items:center; gap:12px;">' +
+        '<div class="lt-avatar">' + getInitials(ltUserProfile.name) + '</div>' +
+        '<div style="text-align:left;">' +
+          '<div style="color:#f1f3f5; font-weight:600; font-size:0.95rem;">' + ltUserProfile.name + ' <span class="pop-badge" style="margin-left:6px;">' + ltUserProfile.id + '</span></div>' +
+          '<div style="color:#7c818d; font-size:0.8rem; margin-top:2px;">Статус: ' + ltUserProfile.status + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+        '<button class="lt-pill-btn" onclick="copyUserId()">Скопировать ID</button>' +
+        '<button class="lt-pill-btn" onclick="editUserProfile()">Профиль и статус</button>' +
+        '<button class="lt-pill-btn" onclick="toggleChatsPopover(event)">Все чаты</button>' +
+      '</div>' +
+    '</div>';
+  if (activeChatContext.type === 'ai') {
+    const aiMsgsHtml = !aiHistory.length
+      ? '<div class="lt-msg-row other"><div class="lt-msg-meta"><span>ИИ-гид Lingvo Trainer</span></div><div class="lt-msg-bubble">Добро пожаловать. Я помогу сориентироваться в разделах тренажёра, покажу статистику вашего прогресса, найду перевод слова из базы или запомню ваши цели обучения. Выберите быстрый вопрос ниже или напишите свой запрос.</div></div>'
+      : aiHistory.map(function(m) {
+          return '<div class="lt-msg-row ' + (m.role === 'user' ? 'own' : 'other') + '">' +
+            '<div class="lt-msg-meta"><span>' + (m.role === 'user' ? ltUserProfile.name : 'ИИ-гид') + '</span></div>' +
+            '<div class="lt-msg-bubble">' + m.text + '</div>' +
+          '</div>';
+        }).join('');
+
+    ws.innerHTML = profileStripHtml +
+      '<div class="lt-chat-shell">' +
+        '<div class="lt-chat-topbar">' +
+          '<div class="lt-chat-title-group">' +
+            '<div class="lt-avatar ai">AI</div>' +
+            '<div>' +
+              '<div style="color:#f8f9fa; font-weight:600; font-size:1rem;">ИИ-гид и наставник</div>' +
+              '<div style="color:#7c818d; font-size:0.8rem;">Навигация по платформе, разбор слов и перевод</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="lt-chat-actions">' +
+            '<button class="lt-pill-btn" onclick="addMemoryFact()">+ Заметка в память</button>' +
+            '<button class="lt-pill-btn" onclick="var b=document.getElementById(\'geminiConfigBox\'); b.style.display=(b.style.display===\'none\'?\'block\':\'none\');">Настройки API</button>' +
+            '<button class="lt-pill-btn danger" onclick="clearAiChat()">Очистить</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lt-subpanel" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">' +
+          '<span><strong style="color:#cfd3dc;">Память наставника:</strong> ' + (aiMemory.length ? aiMemory.join(' • ') : 'пока нет записей') + '</span>' +
+          '<span class="pop-badge ' + (geminiApiKey ? 'accent' : '') + '">' + (geminiApiKey ? 'Gemini API подключен' : 'Автономный режим') + '</span>' +
+        '</div>' +
+        '<div id="geminiConfigBox" class="lt-subpanel" style="display:none;">' +
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
+            '<input id="geminiKeyInput" type="password" class="input-dark" style="flex:1; min-width:220px;" placeholder="Ключ Google Gemini API (AIza...)" value="' + geminiApiKey + '" />' +
+            '<button class="btn-primary" onclick="saveGeminiKey()">Сохранить ключ</button>' +
+          '</div>' +
+          '<div style="font-size:0.76rem; color:#7c818d; margin-top:6px;">Ключ хранится локально в браузере и открывает полный перевод текстов и поиск в Google.</div>' +
+        '</div>' +
+        '<div class="lt-messages-area" id="ltMessagesScroll">' + aiMsgsHtml + '</div>' +
+        '<div class="lt-quick-prompts">' +
+          '<button class="lt-pill-btn" onclick="sendQuickPrompt(\'Как пользоваться чатами и группами?\')">Как устроены чаты</button>' +
+          '<button class="lt-pill-btn" onclick="sendQuickPrompt(\'Где найти корни Ханча?\')">Где Ханча</button>' +
+          '<button class="lt-pill-btn" onclick="sendQuickPrompt(\'Покажи мой прогресс\')">Мой прогресс</button>' +
+          '<button class="lt-pill-btn" onclick="sendQuickPrompt(\'Как учить грамматику?\')">Уроки грамматики</button>' +
+        '</div>' +
+        '<div class="lt-composer">' +
+          '<input id="ltChatInput" type="text" placeholder="Задайте вопрос по приложению, введите слово или «Запомни: ...»" onkeydown="if(event.key===\'Enter\') handleChatSubmit()" />' +
+          '<button class="btn-primary" onclick="handleChatSubmit()">Отправить</button>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  if (activeChatContext.type === 'friend') {
+    const friend = ltFriends.find(f => f.id === activeChatContext.id) || { id: activeChatContext.id, name: 'Собеседник', status: 'В сети' };
+    const msgs = ltDirectMessages[friend.id] || [];
+
+    ws.innerHTML = profileStripHtml +
+      '<div class="lt-chat-shell">' +
+        '<div class="lt-chat-topbar">' +
+          '<div class="lt-chat-title-group">' +
+            '<div class="lt-avatar">' + getInitials(friend.name) + '</div>' +
+            '<div>' +
+              '<div style="color:#f8f9fa; font-weight:600; font-size:1rem;">' + friend.name + ' <span class="pop-badge">' + friend.id + '</span></div>' +
+              '<div style="color:#7c818d; font-size:0.8rem;">' + friend.status + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="lt-chat-actions">' +
+            '<span class="pop-badge">Правила 3+1 • Предупреждений: ' + chatWarnings + '/3</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="lt-messages-area" id="ltMessagesScroll">' + renderMessageListHtml(msgs) + '</div>' +
+        '<div class="lt-composer">' +
+          '<button class="lt-pill-btn" onclick="attachWordCardPrompt()" ' + (isBanned ? 'disabled' : '') + '>+ Слово</button>' +
+          '<input id="ltChatInput" type="text" placeholder="' + (isBanned ? 'Отправка временно заблокирована (система 3+1)' : 'Напишите личное сообщение...') + '" ' + (isBanned ? 'disabled' : '') + ' onkeydown="if(event.key===\'Enter\') handleChatSubmit()" />' +
+          '<button class="btn-primary" onclick="handleChatSubmit()" ' + (isBanned ? 'disabled' : '') + '>Отправить</button>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  if (activeChatContext.type === 'group') {
+    const group = ltStudyGroups.find(g => g.id === activeChatContext.id) || ltStudyGroups[0];
+    if (!group) {
+      selectChatFromPopover('ai', 'ai_guide');
+      return;
+    }
+    const delBtn = group.ownerId !== 'system'
+      ? '<button class="lt-pill-btn danger" onclick="deleteOrLeaveGroup(\'' + group.id + '\')">Удалить группу</button>'
+      : '';
+
+    ws.innerHTML = profileStripHtml +
+      '<div class="lt-chat-shell">' +
+        '<div class="lt-chat-topbar">' +
+          '<div class="lt-chat-title-group">' +
+            '<div class="lt-avatar">' + (group.lang || 'GR') + '</div>' +
+            '<div>' +
+              '<div style="color:#f8f9fa; font-weight:600; font-size:1rem;">' + group.title + ' <span class="pop-badge">' + group.members.length + ' участн.</span></div>' +
+              '<div style="color:#7c818d; font-size:0.8rem;">' + group.desc + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="lt-chat-actions">' +
+            '<span class="pop-badge">3+1 (' + chatWarnings + '/3)</span>' +
+            '<button class="lt-pill-btn" onclick="inviteFriendToGroup(\'' + group.id + '\')">+ Пригласить</button>' +
+            delBtn +
+          '</div>' +
+        '</div>' +
+        '<div class="lt-messages-area" id="ltMessagesScroll">' + renderMessageListHtml(group.messages) + '</div>' +
+        '<div class="lt-composer">' +
+          '<button class="lt-pill-btn" onclick="attachWordCardPrompt()" ' + (isBanned ? 'disabled' : '') + '>+ Слово</button>' +
+          '<input id="ltChatInput" type="text" placeholder="' + (isBanned ? 'Отправка временно заблокирована (система 3+1)' : 'Сообщение в учебную группу...') + '" ' + (isBanned ? 'disabled' : '') + ' onkeydown="if(event.key===\'Enter\') handleChatSubmit()" />' +
+          '<button class="btn-primary" onclick="handleChatSubmit()" ' + (isBanned ? 'disabled' : '') + '>Отправить</button>' +
+        '</div>' +
+      '</div>';
+  }
+};
+updateGlobalUnreadDot();
