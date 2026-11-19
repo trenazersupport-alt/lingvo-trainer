@@ -63,9 +63,16 @@
       <button class="nav-btn" data-tab="video" onclick="switchTab('video')">
         🎬 Видеоразборы <span class="badge-soon">Скоро</span>
       </button>
-      <button class="nav-btn" data-tab="chats" onclick="switchTab('chats')">
-        💬 Чаты и ИИ-помощник <span class="badge-soon">Скоро</span>
-      </button>
+        <div class="nav-chat-wrapper" id="navChatWrapper">
+     <button class="nav-btn nav-chat-trigger" data-tab="chats" onclick="toggleChatsPopover(event)">
+       <span style="display:flex; align-items:center; gap:9px;">
+         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+         Чаты и ИИ-помощник
+       </span>
+       <span id="navChatUnreadBadge" class="chat-nav-dot" style="display:none;"></span>
+     </button>
+     <div id="chatsPopoverMenu" class="chats-popover-menu"></div>
+   </div>
       <button class="nav-btn" data-tab="rating" onclick="switchTab('rating')">
         🏆 Рейтинг <span class="badge-soon">Скоро</span>
       </button>
@@ -244,10 +251,7 @@
 <script src="words.js"></script>
 <script src="hanja.js"></script>
 <script src="grammar.js"></script>
-  <script src="app.js"></script>
-<script src="words.js"></script>
-<script src="hanja.js"></script>
-<script src="grammar.js"></script>
 <script src="ai_assistant.js"></script>
 </body>
 </html>
+
