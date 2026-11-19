@@ -10,8 +10,7 @@ if (!ltUserProfile) {
     status: 'Изучаю базовую лексику'
   };
   localStorage.setItem('lt_user_profile', JSON.stringify(ltUserProfile));
-}
-
+} 
 // 2. СОСТОЯНИЕ ВЫБРАННОГО ЧАТА И ИИ
 let activeChatContext = JSON.parse(localStorage.getItem('lt_active_chat') || '{"type":"ai","id":"ai_guide"}');
 let aiHistory = JSON.parse(localStorage.getItem('lt_ai_history') || '[]');
