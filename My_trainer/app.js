@@ -1610,3 +1610,39 @@ switchTab = function(tab) {
     if (btn) btn.textContent = '»';
   }
 };
+// СТАРТОВАЯ ГЛАВНАЯ СТРАНИЦА ПРИ ОТКРЫТИИ САЙТА (С КРУПНЫМИ КАРТИНКАМИ И ШАПКОЙ)
+if (!sessionStorage.getItem('lt_visited')) {
+  sessionStorage.setItem('lt_visited', '1');
+  curTab = 'about';
+  localStorage.setItem('lt_cur_tab', 'about');
+}
+
+const _origRenderForHome = render;
+render = function() {
+  if (curTab !== 'about') return _origRenderForHome();
+  const ws = document.getElementById('workspace');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+  ws.innerHTML = `
+    <div style="max-width:1060px; margin:0 auto; text-align:center; padding-top:10px;">
+      <h1 style="font-size:2rem; color:#fff; margin-bottom:10px;">🌸 Добро пожаловать в <span style="color:#ff4747;">Lingvo Trainer</span></h1>
+      <p style="color:#ccc; font-size:1.05rem; max-width:720px; margin:0 auto 22px; line-height:1.6;">
+        Интерактивный тренажёр корейского и английского языков: системный словарь по 7 разделам, корни Ханча, пошаговые уроки грамматики и проверка произношения голосом.
+      </p>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;">
+        <button class="btn-primary" style="font-size:1.05rem; padding:12px 24px;" onclick="switchTab('words')">📚 Перейти к базе слов</button>
+        <button class="btn-secondary" style="font-size:1.05rem; padding:12px 24px;" onclick="switchTab('grammar')">📖 Уроки грамматики</button>
+      </div>
+      <div class="hero-gallery">
+        <img src="1.jpg" alt="Карточка 1" />
+        <img src="2.jpg" alt="Карточка 2" />
+        <img src="3.jpg" alt="Карточка 3" />
+        <img src="4.jpg" alt="Карточка 4" />
+        <img src="5.jpg" alt="Карточка 5" />
+        <img src="6.jpg" alt="Карточка 6" />
+      </div>
+    </div>
+  `;
+};
+
+if (curTab === 'about') render();
