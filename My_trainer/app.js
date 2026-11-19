@@ -1581,3 +1581,32 @@ function sendReportEmail() {
   alert('✅ Сообщение отправлено на trenazer.support@gmail.com!\n(Если вы отправляете впервые, проверьте почту и папку «Спам» для подтверждения формы).');
   if (typeof closeModal === 'function') closeModal('reportModal');
 }
+// УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
+function toggleDrawerMenu(e) {
+  if (e) e.stopPropagation();
+  const sb = document.querySelector('.sidebar');
+  const btn = document.getElementById('floatingMenuBtn');
+  if (!sb) return;
+  const isOpen = sb.classList.toggle('drawer-open');
+  if (btn) btn.textContent = isOpen ? '«' : '»';
+}
+
+document.addEventListener('click', (e) => {
+  const sb = document.querySelector('.sidebar');
+  const btn = document.getElementById('floatingMenuBtn');
+  if (sb && sb.classList.contains('drawer-open') && !sb.contains(e.target) && e.target !== btn) {
+    sb.classList.remove('drawer-open');
+    if (btn) btn.textContent = '»';
+  }
+});
+
+const _origSwitchTabForDrawer = switchTab;
+switchTab = function(tab) {
+  _origSwitchTabForDrawer(tab);
+  const sb = document.querySelector('.sidebar');
+  const btn = document.getElementById('floatingMenuBtn');
+  if (sb && sb.classList.contains('drawer-open')) {
+    sb.classList.remove('drawer-open');
+    if (btn) btn.textContent = '»';
+  }
+};
