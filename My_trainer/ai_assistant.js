@@ -271,7 +271,7 @@ ownerId: ltUserProfile.id,
 members: [ltUserProfile.id],
 unread: 0,
 messages: [
-{ senderId: 'system', senderName: 'Система', text: Группа «${title.trim()}» создана. Действуют правила вежливости 3+1., time: getNowTime() }
+{ senderId: 'system', senderName: 'Система', text: 'Группа «' + title.trim() + '» создана. Действуют правила вежливости 3+1.', time: getNowTime() }
 ]
 };
 ltStudyGroups.push(newGroup);
@@ -284,7 +284,7 @@ const group = ltStudyGroups.find(g => g.id === groupId);
 if (!group) return;
 const available = ltFriends.filter(f => !group.members.includes(f.id));
 if (!available.length) {
-alert(Все ваши друзья уже в группе.\nКод приглашения в группу: ${group.id.toUpperCase()});
+alert('Все ваши друзья уже в группе.\nКод приглашения в группу: ' + group.id.toUpperCase());
 return;
 }
 const listText = available.map((f, idx) => ${idx + 1}. ${f.name} (${f.id})).join('\n');
