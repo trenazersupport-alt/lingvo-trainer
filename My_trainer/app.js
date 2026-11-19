@@ -1610,39 +1610,122 @@ switchTab = function(tab) {
     if (btn) btn.textContent = '»';
   }
 };
-// СТАРТОВАЯ ГЛАВНАЯ СТРАНИЦА ПРИ ОТКРЫТИИ САЙТА (С КРУПНЫМИ КАРТИНКАМИ И ШАПКОЙ)
-if (!sessionStorage.getItem('lt_visited')) {
-  sessionStorage.setItem('lt_visited', '1');
-  curTab = 'about';
-  localStorage.setItem('lt_cur_tab', 'about');
+// СТАРТОВАЯ ГЛАВНАЯ СТРАНИЦА ПРИ ОТКРЫТИИ САЙТА
+curTab = 'about';
+localStorage.setItem('lt_cur_tab', 'about');
+
+const HERO_ART_CARDS = [
+  {
+    img: '1.jpg',
+    lang: 'en-US',
+    badge: 'EN',
+    phrase: 'Every small step builds your fluency.',
+    translit: '[ˈevri smɔːl step bɪldz jɔː ˈfluːənsi]',
+    meaning: 'Каждый маленький шаг строит твою беглость речи.'
+  },
+  {
+    img: '2.jpg',
+    lang: 'en-US',
+    badge: 'EN',
+    phrase: 'Mistakes are proof that you are trying.',
+    translit: '[mɪˈsteɪks ɑː pruːf ðæt juː ɑː ˈtraɪɪŋ]',
+    meaning: 'Ошибки — это доказательство того, что ты стараешься.'
+  },
+  {
+    img: '3.jpg',
+    lang: 'ko-KR',
+    badge: 'KO',
+    phrase: '시작이 반이다.',
+    translit: '[сичжаги панида]',
+    meaning: 'Хорошее начало — половина дела.'
+  },
+  {
+    img: '4.jpg',
+    lang: 'ko-KR',
+    badge: 'KO',
+    phrase: '천 리 길도 한 걸음부터.',
+    translit: '[чхон ли кильдо хан корымпхутхо]',
+    meaning: 'Путь в тысячу ли начинается с одного шага.'
+  },
+  {
+    img: '5.jpg',
+    lang: 'en-US',
+    badge: 'EN',
+    phrase: 'I can handle it.',
+    translit: '[aɪ kæn ˈhændl ɪt]',
+    meaning: 'Я справлюсь с этим.'
+  },
+  {
+    img: '6.jpg',
+    lang: 'ko-KR',
+    badge: 'KO',
+    phrase: '포기하지 않으면 반드시 이루어진다.',
+    translit: '[пхогихачжи анымён пандыщи ируочжинда]',
+    meaning: 'Если не сдаваться, мечта обязательно сбудется.'
+  }
+];
+
+function speakHeroCard(idx, event) {
+  if (event) event.stopPropagation();
+  const item = HERO_ART_CARDS[idx];
+  if (!item || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(item.phrase);
+  u.lang = item.lang;
+  u.rate = 0.92;
+  window.speechSynthesis.speak(u);
 }
 
-const _origRenderForHome = render;
-render = function() {
-  if (curTab !== 'about') return _origRenderForHome();
+const _origRenderForHome = window.render;
+window.render = function() {
+  if (curTab !== 'about') {
+    return typeof _origRenderForHome === 'function' ? _origRenderForHome() : undefined;
+  }
   const ws = document.getElementById('workspace');
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (!ws) return;
+  document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
 
-  ws.innerHTML = `
-    <div style="max-width:1060px; margin:0 auto; text-align:center; padding-top:10px;">
-      <h1 style="font-size:2rem; color:#fff; margin-bottom:10px;">🌸 Добро пожаловать в <span style="color:#ff4747;">Lingvo Trainer</span></h1>
-      <p style="color:#ccc; font-size:1.05rem; max-width:720px; margin:0 auto 22px; line-height:1.6;">
-        Интерактивный тренажёр корейского и английского языков: системный словарь по 7 разделам, корни Ханча, пошаговые уроки грамматики и проверка произношения голосом.
-      </p>
-      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;">
-        <button class="btn-primary" style="font-size:1.05rem; padding:12px 24px;" onclick="switchTab('words')">📚 Перейти к базе слов</button>
-        <button class="btn-secondary" style="font-size:1.05rem; padding:12px 24px;" onclick="switchTab('grammar')">📖 Уроки грамматики</button>
-      </div>
-      <div class="hero-gallery">
-        <img src="1.jpg" alt="Карточка 1" />
-        <img src="2.jpg" alt="Карточка 2" />
-        <img src="3.jpg" alt="Карточка 3" />
-        <img src="4.jpg" alt="Карточка 4" />
-        <img src="5.jpg" alt="Карточка 5" />
-        <img src="6.jpg" alt="Карточка 6" />
-      </div>
-    </div>
-  `;
+  const cardsHtml = HERO_ART_CARDS.map(function(c, i) {
+    return '<div class="hero-art-card" onclick="speakHeroCard(' + i + ', event)">' +
+      '<img src="' + c.img + '" alt="' + c.phrase + '" />' +
+      '<span class="hero-art-lang">' + c.badge + '</span>' +
+      '<div class="hero-art-overlay">' +
+        '<div class="hero-art-phrase">' + c.phrase + '</div>' +
+        '<div class="hero-art-translit">' + c.translit + '</div>' +
+        '<div class="hero-art-meaning">' + c.meaning + '</div>' +
+        '<button class="hero-art-voice-btn" onclick="speakHeroCard(' + i + ', event)">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' +
+          'Озвучить' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  ws.innerHTML =
+    '<div class="hero-stage">' +
+      '<div class="hero-art-grid">' + cardsHtml + '</div>' +
+      '<svg class="hero-lycoris-bg" viewBox="0 0 420 460" fill="none" xmlns="http://w3.org" aria-hidden="true">' +
+        '<path d="M250 460 C248 370, 232 290, 212 205" stroke="#3a0d12" stroke-width="4" stroke-linecap="round"/>' +
+        '<path d="M212 205 C180 155, 115 145, 70 185 C105 165, 155 175, 195 210" stroke="#b91c1c" stroke-width="2.2"/>' +
+        '<path d="M212 205 C165 130, 110 95, 55 115 C105 112, 155 145, 200 202" stroke="#dc2626" stroke-width="2.2"/>' +
+        '<path d="M212 205 C195 120, 165 65, 120 45 C162 72, 188 125, 208 200" stroke="#991b1b" stroke-width="2.2"/>' +
+        '<path d="M212 205 C225 115, 255 60, 305 42 C262 72, 234 125, 216 200" stroke="#dc2626" stroke-width="2.2"/>' +
+        '<path d="M212 205 C255 130, 315 95, 370 118 C318 115, 265 148, 222 204" stroke="#b91c1c" stroke-width="2.2"/>' +
+        '<path d="M212 205 C265 160, 325 155, 375 198 C330 175, 272 180, 224 212" stroke="#991b1b" stroke-width="2.2"/>' +
+        '<path d="M212 205 C250 215, 305 245, 335 295 C298 258, 255 232, 218 216" stroke="#7f1d1d" stroke-width="2"/>' +
+        '<path d="M212 205 C170 215, 115 245, 85 292 C122 256, 165 230, 205 216" stroke="#7f1d1d" stroke-width="2"/>' +
+        '<path d="M212 205 C175 165, 130 120, 88 78" stroke="#ef4444" stroke-width="1.1" stroke-dasharray="3 2"/>' +
+        '<path d="M212 205 C205 140, 195 85, 178 32" stroke="#ef4444" stroke-width="1.1"/>' +
+        '<path d="M212 205 C235 138, 255 82, 275 30" stroke="#ef4444" stroke-width="1.1"/>' +
+        '<path d="M212 205 C262 162, 312 120, 355 82" stroke="#ef4444" stroke-width="1.1"/>' +
+        '<path d="M212 205 C270 185, 330 175, 388 168" stroke="#dc2626" stroke-width="1.1"/>' +
+        '<path d="M212 205 C152 185, 92 175, 36 168" stroke="#dc2626" stroke-width="1.1"/>' +
+        '<circle cx="88" cy="78" r="2.2" fill="#f87171"/><circle cx="178" cy="32" r="2.2" fill="#f87171"/>' +
+        '<circle cx="275" cy="30" r="2.2" fill="#f87171"/><circle cx="355" cy="82" r="2.2" fill="#f87171"/>' +
+        '<circle cx="388" cy="168" r="2.2" fill="#f87171"/><circle cx="36" cy="168" r="2.2" fill="#f87171"/>' +
+      '</svg>' +
+    '</div>';
 };
 
-if (curTab === 'about') render();
+if (curTab === 'about') window.render();
+
