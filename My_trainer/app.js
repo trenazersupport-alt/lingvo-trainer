@@ -429,24 +429,46 @@ function render() {
       const q = searchQuery.toLowerCase();
       list = list.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q));
     }
+  const ITEMS_PER_PAGE = 8;
+  const pageKey = curTab + '_' + curLang + '_' + selectedCat + '_' + searchQuery;
+  if (window._ltLastPageKey !== pageKey) {
+    window._ltLastPageKey = pageKey;
+    window._ltDictPage = 1;
+  }
+  const totalPages = Math.max(1, Math.ceil(list.length / ITEMS_PER_PAGE));
+  if (!window._ltDictPage || window._ltDictPage > totalPages) window._ltDictPage = 1;
+  const startIdx = (window._ltDictPage - 1) * ITEMS_PER_PAGE;
+  const pageItems = list.slice(startIdx, startIdx + ITEMS_PER_PAGE);
 
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>${curTab === 'words' ? '📚 База слов' : '⭐ Мой личный словарь'} (${list.length})</h2>
-        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-      </div>
-      <div class="toolbar">
-      <input type="text" style="display:none" aria-hidden="true" />
-      <input type="password" style="display:none" aria-hidden="true" />
-      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск слова или перевода..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />            
-         <select class="select-dark" onchange="selectedCat=this.value; render()">
-          ${cats.map(c => `<option value="${c}" ${c === selectedCat ? 'selected' : ''}>${c === 'all' ? 'Все категории' : c}</option>`).join('')}
-        </select>
-      </div>
-      <div class="cards-grid">
-        ${list.length ? list.map(renderWordCard).join('') : '<p style="color:#999;">Список пока пуст. Добавьте слова или переключите категорию!</p>'}
-      </div>
-    `;
+  const catsOptionsHtml = cats.map(function(c) {
+    return '<option value="' + c + '" ' + (c === selectedCat ? 'selected' : '') + '>' + (c === 'all' ? 'Все категории' : c) + '</option>';
+  }).join('');
+
+  const cardsHtml = pageItems.length
+    ? pageItems.map(renderWordCard).join('')
+    : '<p style="color:#999;">Список пока пуст. Добавьте слова или переключите категорию.</p>';
+
+  const pagerHtml = list.length > ITEMS_PER_PAGE
+    ? '<div class="lt-pager-bar">' +
+        '<span class="lt-pager-info">Страница ' + window._ltDictPage + ' из ' + totalPages + '</span>' +
+        '<div class="lt-pager-btns">' +
+          '<button class="lt-pager-btn" onclick="window._ltDictPage=Math.max(1, window._ltDictPage-1); render();" ' + (window._ltDictPage <= 1 ? 'disabled' : '') + '>Назад</button>' +
+          '<button class="lt-pager-btn" onclick="window._ltDictPage=Math.min(' + totalPages + ', window._ltDictPage+1); render();" ' + (window._ltDictPage >= totalPages ? 'disabled' : '') + '>Вперёд</button>' +
+        '</div>' +
+      '</div>'
+    : '';
+
+  ws.innerHTML =
+    '<div class="section-header">' +
+      '<h2>' + (curTab === 'words' ? 'База слов' : 'Мой личный словарь') + ' (' + list.length + ')</h2>' +
+      '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
+    '</div>' +
+    '<div class="toolbar">' +
+      '<input type="search" class="input-dark" placeholder="Поиск слова или перевода..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" />' +
+      '<select class="select-dark" onchange="selectedCat=this.value; render()">' + catsOptionsHtml + '</select>' +
+    '</div>' +
+    '<div class="cards-grid wide-rows">' + cardsHtml + '</div>' +
+    pagerHtml;
  } else if (curTab === 'hanja') {
     ws.innerHTML = `
       <div class="section-header">
@@ -1600,24 +1622,17 @@ function toggleDrawerMenu(e) {
   if (btn) btn.textContent = isOpen ? '«' : '»';
 }
 
-document.addEventListener('click', (e) => {
+function syncDrawerLayout() {
   const sb = document.querySelector('.sidebar');
-  const btn = document.getElementById('floatingMenuBtn');
-  if (sb && sb.classList.contains('drawer-open') && !sb.contains(e.target) && e.target !== btn) {
-    sb.classList.remove('drawer-open');
-    if (btn) btn.textContent = '»';
-  }
-});
+  const isOpen = sb && sb.classList.contains('drawer-open');
+  document.body.classList.toggle('drawer-is-open', !!isOpen);
+}
 
-const _origSwitchTabForDrawer = switchTab;
-switchTab = function(tab) {
-  _origSwitchTabForDrawer(tab);
-  const sb = document.querySelector('.sidebar');
-  const btn = document.getElementById('floatingMenuBtn');
-  if (sb && sb.classList.contains('drawer-open')) {
-    sb.classList.remove('drawer-open');
-    if (btn) btn.textContent = '»';
-  }
+const _origToggleDrawer = toggleDrawerMenu;
+toggleDrawerMenu = function(e) {
+  _origToggleDrawer(e);
+  syncDrawerLayout();
+};
 };
 // СТАРТОВАЯ ГЛАВНАЯ СТРАНИЦА ПРИ ОТКРЫТИИ САЙТА
 curTab = 'about';
