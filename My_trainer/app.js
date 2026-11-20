@@ -1183,71 +1183,92 @@ render = function() {
     });
   }
 
-  if (!mySelectedGroup && !searchQuery.trim()) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>⭐ Личный словарь (${myWords.length})</h2>
-        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-      </div>
-      <div class="toolbar">
-        <input type="text" style="display:none" aria-hidden="true" />
-        <input type="password" style="display:none" aria-hidden="true" />
-        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="my_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск по личному словарю..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-      </div>
-      <div class="cat-grid">
-        ${activeGroups.map(g => `
-          <div class="cat-tile" onclick="mySelectedGroup='${g.id}'; mySelectedSubCat='all'; render()">
-            <div>
-              <div style="font-size:1.6rem; margin-bottom:8px;">${g.icon}</div>
-              <div class="cat-tile-title">${g.title || g.id}</div>
-              <div class="cat-tile-sub">${g.desc}</div>
-            </div>
-            <div style="margin-top:12px; font-size:0.85rem; color:#ff6b6b; font-weight:600;">Добавлено слов: ${g.count} →</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+   if (!mySelectedGroup && !searchQuery.trim()) {
+    const tilesHtml = activeGroups.map(function(g) {
+      return '<div class="cat-tile" onclick="mySelectedGroup=\'' + g.id + '\'; mySelectedSubCat=\'all\'; render()">' +
+        '<div style="font-size:1.9rem; margin-bottom:8px;">' + g.icon + '</div>' +
+        '<div class="cat-tile-title">' + g.title + '</div>' +
+        '<div class="cat-tile-sub">' + g.desc + '</div>' +
+        '<div style="margin-top:12px; font-size:0.82rem; color:#ff6b6b; font-weight:600;">Слов в разделе: ' + g.count + '</div>' +
+      '</div>';
+    }).join('');
+
+    ws.innerHTML =
+      '<div class="section-header">' +
+        '<h2>Личный словарь (' + myWords.length + ')</h2>' +
+        '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
+      '</div>' +
+      '<div class="toolbar">' +
+        '<input type="text" style="display:none" aria-hidden="true" />' +
+        '<input type="password" style="display:none" aria-hidden="true" />' +
+        '<input type="search" readonly onfocus="this.removeAttribute(\'readonly\')" name="search_my_dict_no_autofill" autocomplete="off" class="input-dark" placeholder="Быстрый поиск по моим словам..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" />' +
+      '</div>' +
+      '<div class="cat-grid">' + tilesHtml + '</div>';
     return;
   }
-
   let list = myWords;
   let headerTitle = 'Результаты поиска';
   if (mySelectedGroup === 'custom_group') {
     list = customOnly;
-    headerTitle = '✨ Мои созданные слова';
+    headerTitle = 'Мои добавленные слова';
   } else if (mySelectedGroup) {
-    list = myWords.filter(w => w.group === mySelectedGroup);
-    headerTitle = mySelectedGroup;
+    list = myWords.filter(function(w) { return w.group === mySelectedGroup; });
+    const grpObj = WORD_GROUPS_LIST.find(function(g) { return g.id === mySelectedGroup; });
+    headerTitle = grpObj ? grpObj.title : 'Раздел';
   }
 
-  const subCats = [...new Set(list.map(w => w.cat).filter(Boolean))];
-  if (mySelectedSubCat !== 'all') list = list.filter(w => w.cat === mySelectedSubCat);
+  const subCats = ['all'].concat(Array.from(new Set(list.map(function(w) { return w.cat; }).filter(Boolean))));
+  if (mySelectedSubCat !== 'all') list = list.filter(function(w) { return w.cat === mySelectedSubCat; });
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
-    list = list.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+    list = list.filter(function(w) {
+      return w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q));
+    });
   }
 
-  ws.innerHTML = `
-    <div class="section-header">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="mySelectedGroup=''; searchQuery=''; render()">← К разделам</button>
-        <h2>${headerTitle} (${list.length})</h2>
-      </div>
-      <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-    </div>
-    <div class="toolbar">
-      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="my_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в разделе..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-      ${subCats.length ? `
-        <select class="select-dark" onchange="mySelectedSubCat=this.value; render()">
-          <option value="all" ${mySelectedSubCat === 'all' ? 'selected' : ''}>Все подтемы</option>
-          ${subCats.map(c => `<option value="${c}" ${mySelectedSubCat === c ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-      ` : ''}
-    </div>
-    <div class="word-list">
-      ${list.length ? list.map(renderWordRowCompact).join('') : '<p style="color:#999;">В этой подтеме пока нет слов.</p>'}
-    </div>
-  `;
+  const PER_PAGE = 9;
+  const myKey = curLang + '_' + mySelectedGroup + '_' + mySelectedSubCat + '_' + searchQuery;
+  if (window._ltMyDictKey !== myKey) {
+    window._ltMyDictKey = myKey;
+    window._ltMyDictPage = 1;
+  }
+  const totalPages = Math.max(1, Math.ceil(list.length / PER_PAGE));
+  if (!window._ltMyDictPage || window._ltMyDictPage > totalPages) window._ltMyDictPage = 1;
+  const start = (window._ltMyDictPage - 1) * PER_PAGE;
+  const pageList = list.slice(start, start + PER_PAGE);
+
+  const subCatsHtml = subCats.map(function(c) {
+    return '<option value="' + c + '" ' + (mySelectedSubCat === c ? 'selected' : '') + '>' + (c === 'all' ? 'Все подкатегории' : c) + '</option>';
+  }).join('');
+
+  const rowsHtml = pageList.length
+    ? pageList.map(renderWordRowCompact).join('')
+    : '<p style="color:#888;">В этой категории пока нет слов.</p>';
+
+  const pagerHtml = list.length > PER_PAGE
+    ? '<div class="lt-pager-bar">' +
+        '<span class="lt-pager-info">Страница ' + window._ltMyDictPage + ' из ' + totalPages + '</span>' +
+        '<div class="lt-pager-btns">' +
+          '<button class="lt-pager-btn" onclick="window._ltMyDictPage=Math.max(1, window._ltMyDictPage-1); render();" ' + (window._ltMyDictPage <= 1 ? 'disabled' : '') + '>Назад</button>' +
+          '<button class="lt-pager-btn" onclick="window._ltMyDictPage=Math.min(' + totalPages + ', window._ltMyDictPage+1); render();" ' + (window._ltMyDictPage >= totalPages ? 'disabled' : '') + '>Вперёд</button>' +
+        '</div>' +
+      '</div>'
+    : '';
+
+  ws.innerHTML =
+    '<div class="section-header">' +
+      '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+        '<button class="btn-secondary" onclick="mySelectedGroup=\'\'; searchQuery=\'\'; render()">← К разделам</button>' +
+        '<h2>' + headerTitle + ' (' + list.length + ')</h2>' +
+      '</div>' +
+      '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
+    '</div>' +
+    '<div class="toolbar">' +
+      '<input type="search" readonly onfocus="this.removeAttribute(\'readonly\')" name="search_my_sub_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в разделе..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" />' +
+      '<select class="select-dark" onchange="mySelectedSubCat=this.value; render()">' + subCatsHtml + '</select>' +
+    '</div>' +
+    '<div class="word-list">' + rowsHtml + '</div>' +
+    pagerHtml;
 };
 // НОВЫЙ ДИЗАЙН ХАНЧА: ПЛИТКИ КОРНЕЙ + СПИСОК СЛОВ + МЕНЮ ТРИ ТОЧКИ (⋮)
 let selectedHanjaRoot = '';
