@@ -1352,6 +1352,178 @@ render = function() {
     '</div>' +
     '<div class="word-list">' + rowsHtml + '</div>';
 };
+let selGramMod = null;
+let selGramLesson = null;
+let gramQuizAns = {};
+let completedLessons = JSON.parse(localStorage.getItem('lt_done_lessons') || '[]');
+
+function speakGramText(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = curLang === 'ko' ? 'ko-KR' : 'en-US';
+  u.rate = 0.92;
+  window.speechSynthesis.speak(u);
+}
+
+function checkGramVoice(target) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const st = document.getElementById('gramVoiceStatus');
+  if (!SR) {
+    if (st) st.innerHTML = '<span style="color:#ff6b6b;">Распознавание речи не поддерживается вашим браузером.</span>';
+    return;
+  }
+  const rec = new SR();
+  rec.lang = curLang === 'ko' ? 'ko-KR' : 'en-US';
+  if (st) st.innerHTML = '<span style="color:#ffb84d;">Говорите фразу в микрофон...</span>';
+  rec.onresult = function(e) {
+    const said = e.results[0][0].transcript;
+    const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '').trim();
+    const cleanTgt = target.toLowerCase().replace(/[.,!?]/g, '').trim();
+    if (cleanSaid.includes(cleanTgt) || cleanTgt.includes(cleanSaid)) {
+      if (st) st.innerHTML = '<span style="color:#2ecc71;">Отлично! Распознано: «' + said + '»</span>';
+    } else {
+      if (st) st.innerHTML = '<span style="color:#ffb84d;">Услышано: «' + said + '». Попробуйте ещё раз.</span>';
+    }
+  };
+  rec.start();
+}
+
+function checkGramQuiz(lessonId, totalQ) {
+  let ok = 0;
+  for (let i = 0; i < totalQ; i++) {
+    const sel = document.querySelector('input[name="gq_' + i + '"]:checked');
+    if (sel && parseInt(sel.value, 10) === parseInt(sel.getAttribute('data-ans'), 10)) ok++;
+  }
+  const resBox = document.getElementById('gramQuizResult');
+  if (ok === totalQ) {
+    if (!completedLessons.includes(lessonId)) {
+      completedLessons.push(lessonId);
+      localStorage.setItem('lt_done_lessons', JSON.stringify(completedLessons));
+    }
+    if (resBox) resBox.innerHTML = '<span style="color:#2ecc71; font-weight:600;">Тест пройден (' + ok + ' из ' + totalQ + '). Урок засчитан!</span>';
+  } else {
+    if (resBox) resBox.innerHTML = '<span style="color:#ff6b6b;">Верных ответов: ' + ok + ' из ' + totalQ + '. Проверьте теорию и повторите.</span>';
+  }
+}
+
+const _origRenderForGrammar = render;
+render = function() {
+  if (curTab !== 'grammar') return _origRenderForGrammar();
+  const ws = document.getElementById('workspace');
+  const mods = (typeof grammarCourse !== 'undefined' && grammarCourse[curLang]) ? grammarCourse[curLang] : [];
+
+  if (!selGramMod) {
+    const PER_PAGE = 8;
+    const gKey = 'gm_' + curLang;
+    if (window._ltGramModKey !== gKey) { window._ltGramModKey = gKey; window._ltGramModPage = 1; }
+    const totalPages = Math.max(1, Math.ceil(mods.length / PER_PAGE));
+    if (!window._ltGramModPage || window._ltGramModPage > totalPages) window._ltGramModPage = 1;
+    const pageMods = mods.slice((window._ltGramModPage - 1) * PER_PAGE, window._ltGramModPage * PER_PAGE);
+
+    const rowsHtml = pageMods.map(function(m) {
+      const doneCnt = (m.lessons || []).filter(function(l) { return completedLessons.includes(l.id); }).length;
+      return '<div class="word-row" style="cursor:pointer;" onclick="selGramMod=\'' + m.id + '\'; selGramLesson=null; render()">' +
+        '<div>' +
+          '<div class="word-row-orig">' + m.title + '</div>' +
+          '<div class="word-row-mean">' + m.desc + '</div>' +
+        '</div>' +
+        '<div style="color:#ff8787; font-size:0.82rem; font-weight:600;">Пройдено: ' + doneCnt + ' / ' + (m.lessons ? m.lessons.length : 0) + '</div>' +
+      '</div>';
+    }).join('');
+
+    const pagerHtml = mods.length > PER_PAGE
+      ? '<div class="lt-pager-bar"><span class="lt-pager-info">Страница ' + window._ltGramModPage + ' из ' + totalPages + '</span><div class="lt-pager-btns">' +
+        '<button class="lt-pager-btn" onclick="window._ltGramModPage=Math.max(1,window._ltGramModPage-1); render();" ' + (window._ltGramModPage <= 1 ? 'disabled' : '') + '>Назад</button>' +
+        '<button class="lt-pager-btn" onclick="window._ltGramModPage=Math.min(' + totalPages + ',window._ltGramModPage+1); render();" ' + (window._ltGramModPage >= totalPages ? 'disabled' : '') + '>Вперёд</button>' +
+        '</div></div>'
+      : '';
+
+    ws.innerHTML =
+      '<div class="section-header"><h2>Грамматика — Модули (' + mods.length + ')</h2></div>' +
+      '<div class="word-list">' + (rowsHtml || '<p style="color:#999;">Модули загружаются...</p>') + '</div>' +
+      pagerHtml;
+    return;
+  }
+  const modObj = mods.find(function(m) { return m.id === selGramMod; });
+  if (!modObj) { selGramMod = null; return render(); }
+  const lessons = modObj.lessons || [];
+
+  if (!selGramLesson) {
+    const rowsHtml = lessons.map(function(l) {
+      const isDone = completedLessons.includes(l.id);
+      return '<div class="word-row" style="cursor:pointer;" onclick="selGramLesson=\'' + l.id + '\'; render()">' +
+        '<div>' +
+          '<div class="word-row-orig">' + l.title + '</div>' +
+          '<div class="word-row-mean">' + (l.theory ? l.theory.slice(0, 95) + '...' : '') + '</div>' +
+        '</div>' +
+        '<div style="color:' + (isDone ? '#2ecc71' : '#9ea4b0') + '; font-size:0.82rem; font-weight:600;">' + (isDone ? 'Пройден' : 'Открыть урок') + '</div>' +
+      '</div>';
+    }).join('');
+
+    ws.innerHTML =
+      '<div class="section-header">' +
+        '<div style="display:flex; align-items:center; gap:12px;">' +
+          '<button class="btn-secondary" onclick="selGramMod=null; render()">← К модулям</button>' +
+          '<h2>' + modObj.title + '</h2>' +
+        '</div>' +
+      '</div>' +
+      '<div class="word-list">' + rowsHtml + '</div>';
+    return;
+  }
+
+  const lesson = lessons.find(function(l) { return l.id === selGramLesson; });
+  if (!lesson) { selGramLesson = null; return render(); }
+
+  const itemsHtml = (lesson.items || []).map(function(it) {
+    const safeChar = it.char.replace(/'/g, "\\'");
+    return '<div class="word-row" style="cursor:pointer;" onclick="speakGramText(\'' + safeChar + '\')">' +
+      '<div><span class="word-row-orig">' + it.char + '</span> <span style="color:#f87171; font-size:0.82rem;">' + (it.tr || '') + '</span>' +
+      '<div class="word-row-mean">' + (it.note || '') + '</div></div>' +
+      '<button class="lt-pill-btn" onclick="event.stopPropagation(); speakGramText(\'' + safeChar + '\')">Озвучить</button>' +
+    '</div>';
+  }).join('');
+
+  const quizHtml = (lesson.quiz || []).map(function(qItem, qi) {
+    const opts = qItem.opts.map(function(opt, oi) {
+      return '<label style="display:block; margin:4px 0; cursor:pointer; color:#ddd;">' +
+        '<input type="radio" name="gq_' + qi + '" value="' + oi + '" data-ans="' + qItem.ans + '" /> ' + opt +
+      '</label>';
+    }).join('');
+    return '<div style="margin-bottom:12px; padding:10px; background:rgba(12,13,17,0.75); border:1px solid rgba(255,255,255,0.1);">' +
+      '<div style="font-weight:600; color:#fff; margin-bottom:6px;">' + (qi + 1) + '. ' + qItem.q + '</div>' + opts +
+    '</div>';
+  }).join('');
+
+  const safeTarget = (lesson.voiceTarget || '').replace(/'/g, "\\'");
+  ws.innerHTML =
+    '<div class="section-header">' +
+      '<div style="display:flex; align-items:center; gap:12px;">' +
+        '<button class="btn-secondary" onclick="selGramLesson=null; render()">← К урокам</button>' +
+        '<h2>' + lesson.title + '</h2>' +
+      '</div>' +
+    '</div>' +
+    '<div class="game-box" style="max-width:none; text-align:left; margin-bottom:12px; background:rgba(14,15,20,0.82);">' +
+      '<div style="color:#ff8787; font-weight:600; margin-bottom:6px;">Теория</div>' +
+      '<p style="color:#e4e6eb; line-height:1.55;">' + (lesson.theory || '') + '</p>' +
+    '</div>' +
+    '<div class="word-list" style="margin-bottom:14px;">' + itemsHtml + '</div>' +
+    (lesson.voiceTarget ? '<div class="game-box" style="max-width:none; text-align:left; margin-bottom:14px; background:rgba(14,15,20,0.82);">' +
+      '<div style="color:#ff8787; font-weight:600; margin-bottom:6px;">Практика произношения</div>' +
+      '<div style="color:#fff; margin-bottom:8px;">Скажите фразу: <b>' + lesson.voiceHint + '</b></div>' +
+      '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+        '<button class="btn-secondary" onclick="speakGramText(\'' + safeTarget + '\')">Прослушать эталон</button>' +
+        '<button class="btn-primary" onclick="checkGramVoice(\'' + safeTarget + '\')">Проверить голосом</button>' +
+      '</div>' +
+      '<div id="gramVoiceStatus" style="margin-top:8px; font-size:0.85rem;"></div>' +
+    '</div>' : '') +
+    (quizHtml ? '<div class="game-box" style="max-width:none; text-align:left; background:rgba(14,15,20,0.82);">' +
+      '<div style="color:#ff8787; font-weight:600; margin-bottom:8px;">Мини-тест</div>' +
+      quizHtml +
+      '<button class="btn-primary" onclick="checkGramQuiz(\'' + lesson.id + '\', ' + lesson.quiz.length + ')">Проверить ответы</button>' +
+      '<div id="gramQuizResult" style="margin-top:8px;"></div>' +
+    '</div>' : '');
+};
 const _origRenderForVideoRating = render;
 render = function() {
   if (curTab === 'video') {
