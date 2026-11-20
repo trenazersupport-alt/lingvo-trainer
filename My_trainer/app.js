@@ -1633,7 +1633,6 @@ toggleDrawerMenu = function(e) {
   _origToggleDrawer(e);
   syncDrawerLayout();
 };
-};
 // СТАРТОВАЯ ГЛАВНАЯ СТРАНИЦА ПРИ ОТКРЫТИИ САЙТА
 curTab = 'about';
 localStorage.setItem('lt_cur_tab', 'about');
