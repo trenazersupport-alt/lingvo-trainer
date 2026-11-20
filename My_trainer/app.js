@@ -1002,7 +1002,7 @@ render = function() {
         ${WORD_GROUPS_LIST.map(g => {
           const count = all.filter(w => w.group === g.id).length;
           return `
-            <div class="cat-tile" onclick="selectedGroup='${g.id}'; selectedSubCat='all'; render()">
+           <div class="cat-tile" onclick="selectedGroup='${g.id}'; selectedSubCat='all'; window.render()">
               <div>
                 <div style="font-size:1.6rem; margin-bottom:8px;">${g.icon}</div>
                 <div class="cat-tile-title">${g.id}</div>
@@ -1053,7 +1053,7 @@ render = function() {
         '</div>' +
       '</div>'
     : '';
-
+const grpObj = selectedGroup ? WORD_GROUPS_LIST.find(function(g) { return g.id === selectedGroup; }) : null;
   ws.innerHTML =
     '<div class="section-header">' +
       '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
