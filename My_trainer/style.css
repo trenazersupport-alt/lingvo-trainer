@@ -1365,4 +1365,19 @@ body {
   overflow-y: auto;
   z-index: 1150 !important;
 }
+.sidebar .nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.sidebar .nav-btn svg {
+  flex-shrink: 0;
+  color: #9ea4b0;
+}
+
+.sidebar .nav-btn.active svg,
+.sidebar .nav-btn:hover svg {
+  color: #ef4444;
+}
 
