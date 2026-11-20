@@ -1300,9 +1300,7 @@ render = function() {
     return;
   }
 
-  const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
-  const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
-
+ const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
   if (!selectedHanjaRoot && !searchQuery.trim()) {
     const tilesHtml = listData.map(function(h) {
       return '<div class="cat-tile" onclick="selectedHanjaRoot=\'' + h.root + '\'; render()">' +
