@@ -1548,15 +1548,15 @@ function openReport(wordText) {
   if (typeof openModal === 'function') openModal('reportModal');
 }
 function sendReportEmail() {
-  const subj = (document.getElementById('reportSubject')?.value || 'Обращение в поддержку').trim();
-  const userMail = (document.getElementById('reportUserEmail')?.value || '').trim();
-  const msg = (document.getElementById('reportText')?.value || '').trim();
+  const subj = document.getElementById('reportSubject').value;
+  const email = document.getElementById('reportUserEmail').value.trim();
+  const msg = document.getElementById('reportText').value.trim();
 
   if (!msg) {
-    return alert('Пожалуйста, опишите ошибку или ваш вопрос перед отправкой.');
+    alert('Ошибка: пожалуйста, опишите вопрос или проблему перед отправкой.');
+    return;
   }
-
-  let iframe = document.getElementById('hidden_mail_frame');
+ let iframe = document.getElementById('hidden_mail_frame');
   if (!iframe) {
     iframe = document.createElement('iframe');
     iframe.name = 'hidden_mail_frame';
