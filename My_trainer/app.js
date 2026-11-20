@@ -1293,312 +1293,79 @@ render = function() {
   const ws = document.getElementById('workspace');
 
   if (curLang !== 'ko') {
-    ws.innerHTML = `
-      <div class="section-header"><h2>🏯 Ханча (Корни иероглифов)</h2></div>
-      <div class="game-box" style="margin-top:20px;">
-        <p style="color:#ccc;">Раздел <b>Ханча</b> относится к корейскому языку. Переключите язык на <b>🇰🇷 Корейский</b> в верхнем меню!</p>
-      </div>
-    `;
+     ws.innerHTML =
+      '<div class="section-header"><h2>Ханча (Корни иероглифов)</h2></div>' +
+      '<div class="game-box" style="margin-top:20px;">' +
+        '<p style="color:#ccc;">Раздел <b>Ханча</b> относится к корейскому языку. Переключите язык на <b>Корейский</b> в верхнем меню!</p>' +
+      '</div>';
     return;
   }
 
   const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
+  const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
 
   if (!selectedHanjaRoot && !searchQuery.trim()) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>🏯 Ханча — выберите корень (${listData.length})</h2>
-      </div>
-      <div class="toolbar">
-        <input type="text" style="display:none" aria-hidden="true" />
-        <input type="password" style="display:none" aria-hidden="true" />
-        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="hanja_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск по корню или слову Ханча..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-      </div>
-      <div class="cat-grid">
-        ${listData.map(h => `
-          <div class="cat-tile" onclick="selectedHanjaRoot='${h.root}'; render()">
-            <div>
-              <div style="font-size:1.5rem; font-weight:700; color:#ff6b6b; margin-bottom:6px;">${h.root}</div>
-              <div class="cat-tile-title">${h.meaning}</div>
-            </div>
-            <div style="margin-top:12px; font-size:0.85rem; color:#aaa; font-weight:600;">Слов на корень: ${h.words.length} →</div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+    const tilesHtml = listData.map(function(h) {
+      return '<div class="cat-tile" onclick="selectedHanjaRoot=\'' + h.root + '\'; render()">' +
+        '<div style="font-size:2rem; color:#ff6b6b; font-weight:700; margin-bottom:6px;">' + h.root + '</div>' +
+        '<div class="cat-tile-title">' + h.meaning + '</div>' +
+        '<div class="cat-tile-sub">Слов с корнем: ' + (h.words ? h.words.length : 0) + '</div>' +
+      '</div>';
+    }).join('');
+
+    ws.innerHTML =
+      '<div class="section-header"><h2>Ханча — выберите корень (' + listData.length + ')</h2></div>' +
+      '<div class="toolbar"><input type="search" class="input-dark" placeholder="Поиск по корню или слову Ханча..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" /></div>' +
+      '<div class="cat-grid">' + tilesHtml + '</div>';
     return;
   }
 
-  let wordsToShow = [];
-  let titleText = 'Результаты поиска';
+  let wordsList = [];
+  let headerTitle = 'Поиск по Ханче';
   if (selectedHanjaRoot) {
-    const found = listData.find(h => h.root === selectedHanjaRoot);
-    wordsToShow = found ? found.words : [];
-    titleText = found ? `${found.root} — ${found.meaning}` : selectedHanjaRoot;
+    const rootObj = listData.find(function(h) { return h.root === selectedHanjaRoot; });
+    wordsList = rootObj && rootObj.words ? rootObj.words : [];
+    headerTitle = rootObj ? (rootObj.root + ' — ' + rootObj.meaning) : 'Корень Ханча';
   } else {
-    wordsToShow = listData.flatMap(h => h.words);
+    listData.forEach(function(h) {
+      if (h.words) wordsList = wordsList.concat(h.words);
+    });
   }
 
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
-    wordsToShow = wordsToShow.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+    wordsList = wordsList.filter(function(w) {
+      return w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q));
+    });
   }
 
-  ws.innerHTML = `
-    <div class="section-header">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="selectedHanjaRoot=''; searchQuery=''; render()">← К корням</button>
-        <h2>${titleText} (${wordsToShow.length})</h2>
-      </div>
-    </div>
-    <div class="toolbar">
-      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="hanja_search_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в списке..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-    </div>
-    <div class="word-list">
-      ${wordsToShow.length ? wordsToShow.map(renderWordRowCompact).join('') : '<p style="color:#999;">Слов не найдено.</p>'}
-    </div>
-  `;
+  const rowsHtml = wordsList.length
+    ? wordsList.map(renderWordRowCompact).join('')
+    : '<p style="color:#888;">Ничего не найдено.</p>';
+
+  ws.innerHTML =
+    '<div class="section-header">' +
+      '<div style="display:flex; align-items:center; gap:12px;">' +
+        '<button class="btn-secondary" onclick="selectedHanjaRoot=\'\'; searchQuery=\'\'; render()">← К корням</button>' +
+        '<h2>' + headerTitle + ' (' + wordsList.length + ')</h2>' +
+      '</div>' +
+    '</div>' +
+    '<div class="word-list">' + rowsHtml + '</div>';
 };
-// ИНТЕРАКТИВНЫЕ УРОКИ ГРАММАТИКИ (ТЕОРИЯ + МИКРОФОН + МИНИ-ТЕСТ)
-let selGrammarMod = '';
-let selGrammarLesson = '';
-let completedLessons = JSON.parse(localStorage.getItem('lt_done_lessons') || '[]');
-let lessonQuizAnswers = {};
-
-function answerLessonQuiz(lessonId, qIdx, optIdx, correctIdx, btnEl) {
-  const parent = btnEl.parentElement;
-  parent.querySelectorAll('button').forEach(b => {
-    b.style.borderColor = '#3c3c4e';
-    b.style.background = '#22222e';
-  });
-  if (optIdx === correctIdx) {
-    btnEl.style.borderColor = '#2ecc71';
-    btnEl.style.background = '#1e5c30';
-    lessonQuizAnswers[lessonId + '_' + qIdx] = true;
-  } else {
-    btnEl.style.borderColor = '#ff4747';
-    btnEl.style.background = '#6e1919';
-    lessonQuizAnswers[lessonId + '_' + qIdx] = false;
-  }
-}
-
-function finishGrammarLesson(lessonId, totalQ) {
-  let correctCount = 0;
-  for (let i = 0; i < totalQ; i++) {
-    if (lessonQuizAnswers[lessonId + '_' + i]) correctCount++;
-  }
-  const resEl = document.getElementById('lessonFinishMsg');
-  if (correctCount < totalQ) {
-    if (resEl) {
-      resEl.style.color = '#ffb84d';
-      resEl.textContent = `⚠️ Правильных ответов: ${correctCount} из ${totalQ}. Исправьте ошибки, чтобы завершить урок!`;
-    }
-    return;
-  }
-  if (!completedLessons.includes(lessonId)) {
-    completedLessons.push(lessonId);
-    localStorage.setItem('lt_done_lessons', JSON.stringify(completedLessons));
-  }
-  if (resEl) {
-    resEl.style.color = '#2ecc71';
-    resEl.textContent = '🎉 Поздравляем! Урок успешно пройден и сохранён в прогрессе!';
-  }
-}
-
-const _origRenderForGrammar = render;
+const _origRenderForVideoRating = render;
 render = function() {
-  if (curTab !== 'grammar') return _origRenderForGrammar();
-  const ws = document.getElementById('workspace');
-  const modules = (typeof grammarCourse !== 'undefined' && grammarCourse[curLang]) ? grammarCourse[curLang] : [];
-
-  // 1. ЭКРАН ВЫБОРА МОДУЛЯ
-  if (!selGrammarMod) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>📖 Грамматика и уроки (${curLang === 'ko' ? 'Корейский' : 'Английский'})</h2>
-      </div>
-      <div class="cat-grid">
-        ${modules.map(m => {
-          const doneCount = m.lessons.filter(l => completedLessons.includes(l.id)).length;
-          return `
-            <div class="cat-tile" onclick="selGrammarMod='${m.id}'; selGrammarLesson=''; render()">
-              <div>
-                <div style="font-size:1.7rem; margin-bottom:8px;">${m.icon}</div>
-                <div class="cat-tile-title">${m.title}</div>
-                <div class="cat-tile-sub">${m.desc}</div>
-              </div>
-              <div style="margin-top:14px; font-size:0.85rem; color:${doneCount === m.lessons.length ? '#2ecc71' : '#ff6b6b'}; font-weight:600;">
-                Пройдено уроков: ${doneCount} из ${m.lessons.length} →
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
+  if (curTab === 'video') {
+    const ws = document.getElementById('workspace');
+    ws.innerHTML = '<div class="section-header"><h2>Видеоразборы</h2></div><div class="game-box" style="margin-top:20px;"><p style="color:#ccc;">Раздел в разработке. Скоро здесь появятся разборы диалогов и грамматики.</p></div>';
     return;
   }
-
-  const modObj = modules.find(m => m.id === selGrammarMod);
-  if (!modObj) { selGrammarMod = ''; return render(); }
-
-  // 2. ЭКРАН СПИСКА УРОКОВ ВНУТРИ МОДУЛЯ
-  if (!selGrammarLesson) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <button class="btn-secondary" onclick="selGrammarMod=''; render()">← К модулям</button>
-          <h2>${modObj.icon} ${modObj.title}</h2>
-        </div>
-      </div>
-      <div class="word-list">
-        ${modObj.lessons.map(l => {
-          const isDone = completedLessons.includes(l.id);
-          return `
-            <div class="word-row ${isDone ? 'is-learned' : ''}" style="cursor:pointer;" onclick="selGrammarLesson='${l.id}'; render()">
-              <div class="word-row-info">
-                <div class="word-row-orig" style="font-size:1.1rem;">${l.title}</div>
-                <div style="font-size:0.85rem; color:#aaa; margin-top:4px;">Теория • Произношение • Мини-тест (${l.quiz.length} вопр.)</div>
-              </div>
-              <div style="font-weight:700; color:${isDone ? '#2ecc71' : '#ff6b6b'};">
-                ${isDone ? '✅ Пройдено' : 'Начать →'}
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
+  if (curTab === 'rating') {
+    const ws = document.getElementById('workspace');
+    ws.innerHTML = '<div class="section-header"><h2>Рейтинг учеников</h2></div><div class="game-box" style="margin-top:20px;"><p style="color:#ccc;">Таблица лидеров станет доступна после подключения облачной синхронизации.</p></div>';
     return;
   }
-
-  // 3. ЭКРАН САМОГО УРОКА (ТЕОРИЯ + МИКРОФОН + ТЕСТ)
-  const les = modObj.lessons.find(l => l.id === selGrammarLesson);
-  if (!les) { selGrammarLesson = ''; return render(); }
-  const safeSpeak = les.speakTarget.replace(/'/g, "\\'");
-
-  ws.innerHTML = `
-    <div class="section-header">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="selGrammarLesson=''; render()">← К урокам</button>
-        <h2>${les.title}</h2>
-      </div>
-    </div>
-
-    <div class="game-box" style="max-width:760px; text-align:left; margin-bottom:18px;">
-      <h3 style="color:#ff6b6b; margin-bottom:10px;">📘 1. Теория и примеры</h3>
-      <p style="color:#ddd; line-height:1.6; margin-bottom:14px;">${les.theory}</p>
-      <div class="word-list">
-        ${les.items.map(it => `
-          <div class="word-row" style="background:#1b1b26;">
-            <div class="word-row-info">
-              <div class="word-row-top">
-                <span class="word-row-orig">${it.char}</span>
-                <span class="word-row-tr">${it.tr}</span>
-              </div>
-              <div class="word-row-mean" style="font-size:0.9rem; color:#bbb;">${it.note}</div>
-            </div>
-            <button class="icon-circle-btn" title="Прослушать" onclick="speakText('${it.char.split('(').at(0).split('→').at(-1).trim().replace(/'/g, "\\'")}')">🔊</button>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <div class="game-box" style="max-width:760px; text-align:left; margin-bottom:18px;">
-      <h3 style="color:#ffb84d; margin-bottom:10px;">🎙️ 2. Практика произношения</h3>
-      <p style="color:#ccc; margin-bottom:12px;">Прослушайте контрольную фразу и произнесите её в микрофон: <b>${les.speakHint}</b></p>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="speakText('${safeSpeak}')">🔊 Послушать образец</button>
-        <button class="btn-primary" onclick="checkSpeech('${safeSpeak}', this, 'lesson_sp_${les.id}')">🎙️ Произнести в микрофон</button>
-      </div>
-      <div id="speech_res_lesson_sp_${les.id}" style="font-size:0.92rem; margin-top:10px; font-weight:600;"></div>
-    </div>
-
-    <div class="game-box" style="max-width:760px; text-align:left;">
-      <h3 style="color:#2ecc71; margin-bottom:12px;">📝 3. Мини-тест для закрепления</h3>
-      ${les.quiz.map((q, qIdx) => `
-        <div style="margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #2a2a38;">
-          <div style="font-weight:600; color:#fff; margin-bottom:8px;">${qIdx + 1}. ${q.q}</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            ${q.opts.map((opt, oIdx) => `
-              <button class="game-opt-btn" style="padding:9px 14px; font-size:0.9rem;" onclick="answerLessonQuiz('${les.id}', ${qIdx}, ${oIdx}, ${q.ans}, this)">${opt}</button>
-            `).join('')}
-          </div>
-        </div>
-      `).join('')}
-      <button class="btn-primary" style="width:100%;" onclick="finishGrammarLesson('${les.id}', ${les.quiz.length})">✅ Завершить урок и проверить тест</button>
-      <div id="lessonFinishMsg" style="margin-top:10px; font-weight:600; text-align:center;"></div>
-    </div>
-  `;
+  return _origRenderForVideoRating();
 };
-// ОБНОВЛЕННЫЙ РАЗДЕЛ «ТРЕНИРОВКА ПРОИЗНОШЕНИЯ» (БЕЗ UNDEFINED И С РАБОЧИМИ КНОПКАМИ)
-let voiceWordId = '';
-
-const _origRenderForVoice = render;
-render = function() {
-  if (curTab !== 'voice') return _origRenderForVoice();
-  const ws = document.getElementById('workspace');
-  const pool = getAllWords().filter(w => w.ex && w.ex.trim().length > 0);
-  const list = pool.length ? pool : getAllWords();
-
-  let item = list.find(w => w.id === voiceWordId) || list.at(0);
-  if (item) voiceWordId = item.id;
-
-  if (!item) {
-    ws.innerHTML = '<div class="section-header"><h2>🎙️ Тренировка произношения</h2></div><p style="color:#999;">Нет слов для тренировки.</p>';
-    return;
-  }
-
-  const isLearned = learnedIds.includes(item.id);
-  const isHard = hardIds.includes(item.id);
-  const isPersonal = personalIds.includes(item.id);
-  const safeWord = item.word.replace(/'/g, "\\'");
-  const safeEx = (item.ex || '').replace(/'/g, "\\'");
-
-  ws.innerHTML = `
-    <div class="section-header">
-      <h2>🎙️ Тренировка произношения</h2>
-      <button class="btn-primary" onclick="nextVoiceWord()">🔄 Следующее слово</button>
-    </div>
-    <div class="word-card ${isLearned ? 'learned' : ''}" style="max-width:760px;">
-      <div class="card-top">
-        <div>
-          <div class="word-main">${item.word}</div>
-          <div class="word-translit">${item.translit || ''}</div>
-        </div>
-        <button class="action-chip" onclick="speakText('${safeWord}')">🔊 Слово</button>
-      </div>
-      <div class="word-meaning">${item.meaning}</div>
-      <div style="font-size:0.85rem; color:#888; margin-bottom:12px;">${item.cat || ''}</div>
-      ${item.ex ? `
-        <div class="example-box">
-          <div style="font-size:1.05rem; color:#fff; margin-bottom:4px;">${item.ex}</div>
-          <div style="font-size:0.9rem; color:#aaa;">${item.exTr || ''}</div>
-        </div>
-      ` : ''}
-      <div id="speech_${item.id}" style="margin:10px 0; font-weight:600; min-height:22px;"></div>
-      <div class="card-actions">
-        ${item.ex ? `<button class="action-chip" onclick="speakText('${safeEx}')">🔊 Пример</button>` : ''}
-        <button class="action-chip" onclick="checkSpeech('${safeWord}', '${item.id}')">🎙️ Слово</button>
-        ${item.ex ? `<button class="action-chip" onclick="checkSpeech('${safeEx}', '${item.id}')">🎙️ Фраза</button>` : ''}
-        <button class="action-chip ${isLearned ? 'learned-active' : ''}" onclick="toggleLearned('${item.id}')">${isLearned ? '✅ Выучено' : '⬜ Выучить'}</button>
-        <button class="action-chip" style="${isHard ? 'border-color:#ffb84d; color:#ffb84d;' : ''}" onclick="toggleHard('${item.id}')">${isHard ? '🔁 Повторю позже' : '🕒 Повторить позже'}</button>
-        <button class="action-chip" onclick="togglePersonal('${item.id}')">${isPersonal ? '★ В личном' : '☆ В личный'}</button>
-        <button class="action-chip" style="color:#ff7b7b;" onclick="openReport('${safeWord}')">🚩 Ошибка</button>
-      </div>
-    </div>
-  `;
-};
-function nextVoiceWord() {
-  const pool = getAllWords().filter(w => w.ex && w.ex.trim().length > 0);
-  const list = pool.length ? pool : getAllWords();
-  if (list.length <= 1) return;
-  let next = list.at(Math.floor(Math.random() * list.length));
-  if (next.id === voiceWordId) next = list.at((list.indexOf(next) + 1) % list.length);
-  voiceWordId = next.id;
-  render();
-}
-// ПРИВЯЗКА МОДАЛЬНОГО ОКНА ПОДДЕРЖКИ И ОШИБОК К ПОЧТЕ trenazer.support@gmail.com
-const SUPPORT_EMAIL = 'trenazer.support@gmail.com';
-
 function openReport(wordText) {
   const subjEl = document.getElementById('reportSubject');
   const textEl = document.getElementById('reportText');
