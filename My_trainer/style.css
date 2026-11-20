@@ -1380,4 +1380,8 @@ body {
 .sidebar .nav-btn:hover svg {
   color: #ef4444;
 }
+.sidebar .nav-btn {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
 
