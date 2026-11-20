@@ -1110,9 +1110,9 @@ function checkSpeech(targetWord, rawBtn, itemId) {
     const cleanTarget = targetWord.toLowerCase().replace(/[.,!?]/g, '');
 
     if (cleanSaid === cleanTarget || (cleanTarget.includes(cleanSaid) && cleanSaid.length > 1)) {
-      showMsg(`✅ Верно! Распознано: «${said}»`, '#2ecc71');
+     showMsg('✅ Верно! Распознано: «' + said + '»', '#2ecc71');
     } else {
-      showMsg(`❌ Услышано: «${said}» (Эталон: ${targetWord})`, '#ffb84d');
+    showMsg('❌ Услышано: «' + said + '» (Эталон: ' + targetWord + ')', '#ffb84d');
     }
   };
 
