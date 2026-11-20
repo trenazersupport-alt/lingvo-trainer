@@ -36,45 +36,54 @@
     <!— ЛЕВОЕ МЕНЮ —>
     <button id="floatingMenuBtn" class="floating-menu-btn" onclick="toggleDrawerMenu(event)" title="Открыть меню">»</button>
     <aside class="sidebar">
-      <div class="menu-section-title">Обучение</div>
+            <div class="menu-section-title">Обучение</div>
       <button class="nav-btn active" data-tab="words" onclick="switchTab('words')">
-        📚 База слов
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        База слов
       </button>
       <button class="nav-btn" data-tab="myDict" onclick="switchTab('myDict')">
-        ⭐ Личный словарь
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        Личный словарь
       </button>
       <button class="nav-btn" data-tab="hanja" onclick="switchTab('hanja')">
-        🧩 Корни слов (Ханча)
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Корни слов (Ханча)
       </button>
       <button class="nav-btn" data-tab="grammar" onclick="switchTab('grammar')">
-        📖 Грамматика
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        Грамматика
       </button>
       <button class="nav-btn" data-tab="voice" onclick="switchTab('voice')">
-        🎙️ Тренировка голоса
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>
+        Тренировка голоса
       </button>
 
       <div class="menu-section-title">Практика и Сообщество</div>
       <button class="nav-btn" data-tab="game" onclick="switchTab('game')">
-  🎮 Игра: Вопрос-Ответ
-</button>
-      <button class="nav-btn" data-tab="repeatGame" onclick="switchTab('repeatGame')">
-  🔁 Повторение голосом
-</button>
-      <button class="nav-btn" data-tab="video" onclick="switchTab('video')">
-        🎬 Видеоразборы <span class="badge-soon">Скоро</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        Игра: Вопрос-Ответ
       </button>
-        <div class="nav-chat-wrapper" id="navChatWrapper">
-     <button class="nav-btn nav-chat-trigger" data-tab="chats" onclick="toggleChatsPopover(event)">
-       <span style="display:flex; align-items:center; gap:9px;">
-         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-         Чаты и ИИ-помощник
-       </span>
-       <span id="navChatUnreadBadge" class="chat-nav-dot" style="display:none;"></span>
-     </button>
-     <div id="chatsPopoverMenu" class="chats-popover-menu"></div>
-   </div>
+      <button class="nav-btn" data-tab="repeatGame" onclick="switchTab('repeatGame')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        Повторение голосом
+      </button>
+      <button class="nav-btn" data-tab="video" onclick="switchTab('video')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        Видеоразборы <span class="badge-soon">Скоро</span>
+      </button>
+      <div class="nav-chat-wrapper" id="navChatWrapper">
+        <button class="nav-btn nav-chat-trigger" data-tab="chats" onclick="toggleChatsPopover(event)">
+          <span style="display:flex; align-items:center; gap:9px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Чаты и ИИ-помощник
+          </span>
+          <span id="navChatUnreadBadge" class="chat-nav-dot" style="display:none;"></span>
+        </button>
+        <div id="chatsPopoverMenu" class="chats-popover-menu"></div>
+      </div>
       <button class="nav-btn" data-tab="rating" onclick="switchTab('rating')">
-        🏆 Рейтинг <span class="badge-soon">Скоро</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Рейтинг <span class="badge-soon">Скоро</span>
       </button>
     </aside>
     
