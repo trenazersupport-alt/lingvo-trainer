@@ -1701,31 +1701,20 @@ window.render = function() {
     '</div>';
   }).join('');
 
+  ws.style.background = "#000000 url('bg.jpg') right bottom / contain no-repeat";
   ws.innerHTML =
     '<div class="hero-stage">' +
       '<div class="hero-art-grid">' + cardsHtml + '</div>' +
-      '<svg class="hero-lycoris-bg" viewBox="0 0 420 460" fill="none" xmlns="http://w3.org" aria-hidden="true">' +
-        '<path d="M250 460 C248 370, 232 290, 212 205" stroke="#3a0d12" stroke-width="4" stroke-linecap="round"/>' +
-        '<path d="M212 205 C180 155, 115 145, 70 185 C105 165, 155 175, 195 210" stroke="#b91c1c" stroke-width="2.2"/>' +
-        '<path d="M212 205 C165 130, 110 95, 55 115 C105 112, 155 145, 200 202" stroke="#dc2626" stroke-width="2.2"/>' +
-        '<path d="M212 205 C195 120, 165 65, 120 45 C162 72, 188 125, 208 200" stroke="#991b1b" stroke-width="2.2"/>' +
-        '<path d="M212 205 C225 115, 255 60, 305 42 C262 72, 234 125, 216 200" stroke="#dc2626" stroke-width="2.2"/>' +
-        '<path d="M212 205 C255 130, 315 95, 370 118 C318 115, 265 148, 222 204" stroke="#b91c1c" stroke-width="2.2"/>' +
-        '<path d="M212 205 C265 160, 325 155, 375 198 C330 175, 272 180, 224 212" stroke="#991b1b" stroke-width="2.2"/>' +
-        '<path d="M212 205 C250 215, 305 245, 335 295 C298 258, 255 232, 218 216" stroke="#7f1d1d" stroke-width="2"/>' +
-        '<path d="M212 205 C170 215, 115 245, 85 292 C122 256, 165 230, 205 216" stroke="#7f1d1d" stroke-width="2"/>' +
-        '<path d="M212 205 C175 165, 130 120, 88 78" stroke="#ef4444" stroke-width="1.1" stroke-dasharray="3 2"/>' +
-        '<path d="M212 205 C205 140, 195 85, 178 32" stroke="#ef4444" stroke-width="1.1"/>' +
-        '<path d="M212 205 C235 138, 255 82, 275 30" stroke="#ef4444" stroke-width="1.1"/>' +
-        '<path d="M212 205 C262 162, 312 120, 355 82" stroke="#ef4444" stroke-width="1.1"/>' +
-        '<path d="M212 205 C270 185, 330 175, 388 168" stroke="#dc2626" stroke-width="1.1"/>' +
-        '<path d="M212 205 C152 185, 92 175, 36 168" stroke="#dc2626" stroke-width="1.1"/>' +
-        '<circle cx="88" cy="78" r="2.2" fill="#f87171"/><circle cx="178" cy="32" r="2.2" fill="#f87171"/>' +
-        '<circle cx="275" cy="30" r="2.2" fill="#f87171"/><circle cx="355" cy="82" r="2.2" fill="#f87171"/>' +
-        '<circle cx="388" cy="168" r="2.2" fill="#f87171"/><circle cx="36" cy="168" r="2.2" fill="#f87171"/>' +
-      '</svg>' +
     '</div>';
 };
 
+const _origRenderBeforeHome = _origRenderForHome;
+_origRenderForHome = function() {
+  const ws = document.getElementById('workspace');
+  if (ws) ws.style.background = '';
+  if (typeof _origRenderBeforeHome === 'function') _origRenderBeforeHome();
+};
+
 if (curTab === 'about') window.render();
+
 
