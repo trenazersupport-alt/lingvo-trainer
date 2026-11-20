@@ -1687,10 +1687,12 @@ function speakHeroCard(idx, event) {
 
 const _origRenderForHome = window.render;
 window.render = function() {
+  const ws = document.getElementById('workspace');
   if (curTab !== 'about') {
+    document.body.classList.remove('is-home');
     return typeof _origRenderForHome === 'function' ? _origRenderForHome() : undefined;
   }
-  const ws = document.getElementById('workspace');
+  document.body.classList.add('is-home');
   if (!ws) return;
   document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
 
