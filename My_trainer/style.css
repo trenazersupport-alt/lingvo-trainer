@@ -1508,4 +1508,38 @@ body.drawer-is-open:not(.is-home) .workspace {
     padding-left: 20px !important;
   }
 }
+/* === ИСПРАВЛЕНИЕ КЛИКАБЕЛЬНОСТИ ВСЕХ КНОПОК И МЕНЮ === */
+.topbar {
+  position: relative;
+  z-index: 1300 !important;
+}
+
+.footer-bar {
+  position: relative;
+  z-index: 1300 !important;
+}
+
+.floating-menu-btn {
+  z-index: 1400 !important;
+}
+
+.sidebar {
+  z-index: 1350 !important;
+}
+
+.main-layout {
+  position: relative;
+  z-index: 10 !important;
+}
+
+.workspace {
+  position: relative;
+  z-index: 10 !important;
+}
+
+.modal-overlay.active,
+.modal-overlay.show,
+.modal-overlay[style*="flex"] {
+  z-index: 2000 !important;
+}
 
