@@ -1015,36 +1015,59 @@ render = function() {
       </div>
     `;
     return;
-  }
-
-  let list = selectedGroup ? all.filter(w => w.group === selectedGroup) : all;
-  const subCats = [...new Set(list.map(w => w.cat).filter(Boolean))];
-  if (selectedSubCat !== 'all') list = list.filter(w => w.cat === selectedSubCat);
+  let list = selectedGroup ? all.filter(function(w) { return w.group === selectedGroup; }) : all;
+  const subCats = ['all'].concat(Array.from(new Set(list.map(function(w) { return w.cat; }).filter(Boolean))));
+  if (selectedSubCat !== 'all') list = list.filter(function(w) { return w.cat === selectedSubCat; });
   if (searchQuery.trim()) {
     const q = searchQuery.toLowerCase();
-    list = list.filter(w => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q)));
+    list = list.filter(function(w) {
+      return w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q));
+    });
   }
 
-  ws.innerHTML = `
-    <div class="section-header">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="selectedGroup=''; searchQuery=''; render()">← К разделам</button>
-        <h2>${selectedGroup || 'Результаты поиска'} (${list.length})</h2>
-      </div>
-      <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-    </div>
-    <div class="toolbar">
-      <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Поиск в разделе..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-      ${subCats.length ? `
-        <select class="select-dark" onchange="selectedSubCat=this.value; render()">
-          <option value="all" ${selectedSubCat === 'all' ? 'selected' : ''}>Все подтемы</option>
-          ${subCats.map(c => `<option value="${c}" ${selectedSubCat === c ? 'selected' : ''}>${c}</option>`).join('')}
-        </select>
-      ` : ''}
-    </div>
-    <div class="word-list">
-      ${list.length ? list.map(renderWordRowCompact).join('') : '<p style="color:#999;">В этой подтеме пока нет слов.</p>'}
-    </div>
+  const PER_PAGE = 9;
+  const pKey = curLang + '_' + selectedGroup + '_' + selectedSubCat + '_' + searchQuery;
+  if (window._ltWordsSubKey !== pKey) {
+    window._ltWordsSubKey = pKey;
+    window._ltWordsSubPage = 1;
+  }
+  const totalPages = Math.max(1, Math.ceil(list.length / PER_PAGE));
+  if (!window._ltWordsSubPage || window._ltWordsSubPage > totalPages) window._ltWordsSubPage = 1;
+  const start = (window._ltWordsSubPage - 1) * PER_PAGE;
+  const pageList = list.slice(start, start + PER_PAGE);
+
+  const subCatOpts = subCats.map(function(c) {
+    return '<option value="' + c + '" ' + (selectedSubCat === c ? 'selected' : '') + '>' + (c === 'all' ? 'Все подкатегории' : c) + '</option>';
+  }).join('');
+
+  const rowsHtml = pageList.length
+    ? pageList.map(renderWordRowCompact).join('')
+    : '<p style="color:#888;">В этой категории пока нет слов.</p>';
+
+  const pagerHtml = list.length > PER_PAGE
+    ? '<div class="lt-pager-bar">' +
+        '<span class="lt-pager-info">Страница ' + window._ltWordsSubPage + ' из ' + totalPages + '</span>' +
+        '<div class="lt-pager-btns">' +
+          '<button class="lt-pager-btn" onclick="window._ltWordsSubPage=Math.max(1, window._ltWordsSubPage-1); render();" ' + (window._ltWordsSubPage <= 1 ? 'disabled' : '') + '>Назад</button>' +
+          '<button class="lt-pager-btn" onclick="window._ltWordsSubPage=Math.min(' + totalPages + ', window._ltWordsSubPage+1); render();" ' + (window._ltWordsSubPage >= totalPages ? 'disabled' : '') + '>Вперёд</button>' +
+        '</div>' +
+      '</div>'
+    : '';
+
+  ws.innerHTML =
+    '<div class="section-header">' +
+      '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
+        '<button class="btn-secondary" onclick="selectedGroup=null; searchQuery=\'\'; render()">← К разделам</button>' +
+        '<h2>' + (grpObj ? grpObj.title : 'Результаты поиска') + ' (' + list.length + ')</h2>' +
+      '</div>' +
+      '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
+    '</div>' +
+    '<div class="toolbar">' +
+      '<input type="search" class="input-dark" placeholder="Поиск в разделе..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" />' +
+      '<select class="select-dark" onchange="selectedSubCat=this.value; render()">' + subCatOpts + '</select>' +
+    '</div>' +
+    '<div class="word-list">' + rowsHtml + '</div>' +
+    pagerHtml;
   `;
 };
 // УНИВЕРСАЛЬНАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ ВСЕХ РАЗДЕЛОВ
