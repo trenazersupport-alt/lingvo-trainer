@@ -1384,4 +1384,35 @@ body {
   justify-content: flex-start !important;
   text-align: left !important;
 }
+/* === ФИНАЛЬНЫЕ ФОНЫ: ГЛАВНАЯ (bg.jpg), КОРЕЙСКИЙ (bg_ko.jpg), АНГЛИЙСКИЙ (bg_en.jpg) === */
+body {
+  background-color: #000000 !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-home {
+  background-image: url('bg.jpg') !important;
+  background-position: right bottom !important;
+}
+
+body.lang-ko:not(.is-home) {
+  background-image: url('bg_ko.jpg') !important;
+}
+
+body.lang-en:not(.is-home) {
+  background-image: url('bg_en.jpg') !important;
+}
+
+body:not(.is-home) .workspace {
+  background: rgba(10, 11, 15, 0.62) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  padding: 20px !important;
+}
 
