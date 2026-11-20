@@ -1068,7 +1068,6 @@ render = function() {
     '</div>' +
     '<div class="word-list">' + rowsHtml + '</div>' +
     pagerHtml;
-  `;
 };
 // УНИВЕРСАЛЬНАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ ВСЕХ РАЗДЕЛОВ
 function checkSpeech(targetWord, rawBtn, itemId) {
