@@ -1152,18 +1152,17 @@ render = function() {
   const myWords = getAllWords().filter(w => personalIds.includes(w.id) || String(w.id).startsWith('custom_'));
 
   if (!myWords.length) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>⭐ Личный словарь (0)</h2>
-        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-      </div>
-      <div class="game-box" style="margin-top:20px;">
-        <p style="color:#ccc; line-height:1.6;">
-          В вашем личном словаре пока пусто.<br>
-          Добавьте слова через меню <b>«⋮ → ☆ В свой словарь»</b> в <b>Базе слов</b> или создайте свою карточку кнопкой <b>«➕ Добавить слово»</b> — и здесь автоматически появятся нужные разделы!
-        </p>
-      </div>
-    `;
+       ws.innerHTML =
+      '<div class="section-header">' +
+        '<h2>Личный словарь (0)</h2>' +
+        '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
+      '</div>' +
+      '<div class="game-box" style="margin-top:20px;">' +
+        '<p style="color:#ccc; line-height:1.6;">' +
+          'В вашем личном словаре пока пусто.<br>' +
+          'Добавьте слова через меню <b>⋮ → В свой словарь</b> в <b>Базе слов</b> или создайте свою карточку кнопкой <b>+ Добавить слово</b> — и здесь автоматически появятся нужные разделы!' +
+        '</p>' +
+      '</div>';
     return;
   }
 
