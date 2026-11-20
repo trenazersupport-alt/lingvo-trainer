@@ -1542,4 +1542,42 @@ body.drawer-is-open:not(.is-home) .workspace {
 .modal-overlay[style*="flex"] {
   z-index: 2000 !important;
 }
+/* === КОМПАКТНЫЕ ПО ВЫСОТЕ ПЛАШКИ СЛОВ (9 НА СТРАНИЦУ БЕЗ СКРОЛЛА) === */
+.word-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.word-row,
+.cards-grid.wide-rows .word-card {
+  padding: 6px 14px !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(14, 15, 20, 0.72) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.word-row:hover,
+.cards-grid.wide-rows .word-card:hover {
+  border-color: #dc2626 !important;
+  background: rgba(20, 21, 28, 0.88) !important;
+}
+
+.word-row .word-row-orig {
+  font-size: 0.95rem !important;
+}
+
+.word-row .word-row-mean {
+  font-size: 0.85rem !important;
+  margin-top: 1px !important;
+}
+
+.word-row .icon-circle-btn {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
 
