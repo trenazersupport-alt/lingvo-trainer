@@ -197,6 +197,15 @@ function setLang(lang) {
   document.body.className = lang === 'ko' ? 'lang-ko' : 'lang-en';
   document.getElementById('btnLangKo').classList.toggle('active', lang === 'ko');
   document.getElementById('btnLangEn').classList.toggle('active', lang === 'en');
+
+  const hanjaBtn = document.querySelector('.nav-btn[data-tab="hanja"]');
+  if (hanjaBtn) {
+    hanjaBtn.style.display = lang === 'ko' ? 'flex' : 'none';
+  }
+  if (lang === 'en' && curTab === 'hanja') {
+    switchTab('words');
+    return;
+  }
   render();
 }
 
