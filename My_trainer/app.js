@@ -1352,6 +1352,7 @@ render = function() {
     '</div>' +
     '<div class="word-list">' + rowsHtml + '</div>';
 };
+}
 let selGramMod = null;
 let selGramLesson = null;
 let gramQuizAns = {};
