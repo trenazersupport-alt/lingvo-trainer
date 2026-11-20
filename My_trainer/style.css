@@ -1283,4 +1283,60 @@ button:active, .btn-primary:active, .btn-secondary:active,
   .hero-stage { margin: 10px auto; }
   .hero-art-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
+/* === ПОЛНОЭКРАННЫЙ ФОН + ПАНЕЛИ ПОВЕРХ КАРТИНКИ + ЦЕНТРОВКА === */
+body {
+  background: #000000 url('bg.jpg') right bottom / cover no-repeat fixed !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: rgba(10, 10, 14, 0.55) !important;
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.main-layout {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: transparent !important;
+}
+
+.workspace {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-menu-btn {
+  left: max(24px, calc(50% - 490px)) !important;
+  top: 96px !important;
+  background: rgba(14, 15, 20, 0.85) !important;
+  border: 1px solid #b91c1c !important;
+  z-index: 1100;
+}
+
+.hero-stage {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 0 calc(50% - 420px) !important;
+  padding: 10px 0;
+}
+
+.footer-bar {
+  background: rgba(10, 10, 14, 0.55) !important;
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+@media (max-width: 960px) {
+  .floating-menu-btn { left: 14px !important; }
+  .hero-stage { margin: 10px auto !important; padding: 0 14px; }
+}
 
