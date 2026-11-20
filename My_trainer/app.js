@@ -1542,7 +1542,7 @@ function openReport(wordText) {
   const subjEl = document.getElementById('reportSubject');
   const textEl = document.getElementById('reportText');
   if (subjEl) {
-    subjEl.value = wordText ? `Ошибка в карточке: ${wordText}` : 'Вопрос в службу поддержки';
+      subjEl.value = wordText ? 'Ошибка в карточке: ' + wordText : 'Вопрос в службу поддержки';
   }
   if (textEl) textEl.value = '';
   if (typeof openModal === 'function') openModal('reportModal');
