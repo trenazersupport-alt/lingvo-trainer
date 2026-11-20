@@ -1139,7 +1139,6 @@ function checkSpeech(targetWord, rawBtn, itemId) {
     if (btnEl) btnEl.textContent = oldText;
   }
 }
-if (typeof switchTab === 'function') switchTab(curTab);
 // ДИЗАЙН ЛИЧНОГО СЛОВАРЯ (ТОЛЬКО РАЗДЕЛЫ С ДОБАВЛЕННЫМИ СЛОВАМИ + МОИ СЛОВА)
 let mySelectedGroup = '';
 let mySelectedSubCat = 'all';
