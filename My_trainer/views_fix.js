@@ -165,10 +165,9 @@ window.render = function() {
     return;
   }
 
-vRenderBeforeViewsFix === 'function') {
+  if (typeof _prevRenderBeforeViewsFix === 'function') {
     return _prevRenderBeforeViewsFix();
   }
-};
 /* === ИСПРАВЛЕНИЕ ПРОВЕРКИ ПРОИЗНОШЕНИЯ (МИКРОФОНА) В КАРТОЧКАХ === */
 window.checkSpeech = function(targetWord, btnEl, itemId) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -241,7 +240,7 @@ window.render = function() {
     if (!window._ltVoiceWordId || !all.some(function(w) { return w.id === window._ltVoiceWordId; })) {
       window._ltVoiceWordId = all[Math.floor(Math.random() * all.length)].id;
     }
-    const w = all.find(function(item) { return item.id === window._ltVoiceWordId; }) || all;
+        const w = all.find(function(item) { return item.id === window._ltVoiceWordId; }) || all.at(0);
     const isLearned = typeof learnedIds !== 'undefined' && learnedIds.includes(w.id);
     const isPersonal = typeof personalIds !== 'undefined' && personalIds.includes(w.id);
     const isHard = typeof hardIds !== 'undefined' && hardIds.includes(w.id);
@@ -281,8 +280,9 @@ window.render = function() {
       '</div>';
     return;
   }
-    if (typeof _prevRenderBeforeVoice === 'function') {
+     if (typeof _prevRenderBeforeVoice === 'function') {
     return _prevRenderBeforeVoice();
   }
 };
+
 
