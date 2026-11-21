@@ -1369,60 +1369,30 @@ function sendReportEmail() {
     alert('Пожалуйста, опишите вопрос или проблему перед отправкой.');
     return;
   }
+
   const langLabel = curLang === 'ko' ? 'Корейский' : 'Английский';
+  const mailSubj = 'Lingvo Trainer: ' + subj;
   const fullBody =
     'Тема: ' + subj + '\n' +
     'Язык: ' + langLabel + '\n' +
     'Почта для ответа: ' + (email || 'Не указана') + '\n\n' +
     'Сообщение:\n' + msg;
 
-  // 1. Отправка через скрытую HTML-форму в Web3Forms (без блокировок fetch/CORS)
-  let iframe = document.getElementById('web3_hidden_frame');
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.name = 'web3_hidden_frame';
-    iframe.id = 'web3_hidden_frame';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+  // Копируем текст обращения в буфер обмена на случай, если пользователь использует Яндекс/Mail.ru
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText('Кому: trenazer.support@gmail.com\nТема: ' + mailSubj + '\n\n' + fullBody).catch(() => {});
   }
 
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = 'https://web3forms.com';
-  form.target = 'web3_hidden_frame';
-
-  const payload = {
-    access_key: '6e548fc5-5eb7-44cb-a9ab-919901d743b0',
-    subject: 'Lingvo Trainer: ' + subj,
-    from_name: 'Lingvo Trainer Support',
-    email: email || 'no-reply@lingvotrainer.app',
-    Язык: langLabel,
-    Сообщение: msg
-  };
-
-  Object.entries(payload).forEach(([k, v]) => {
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = k;
-    inp.value = v;
-    form.appendChild(inp);
-  });
-
-  document.body.appendChild(form);
-  form.submit();
-  form.remove();
-
-  // 2. Резервный переход в почтовый клиент / Gmail, если провайдер блокирует Web3Forms
-  const mailtoUrl = 'mailto:trenazer.support@://gmail.com' +
-    encodeURIComponent('Lingvo Trainer: ' + subj) +
+  const gmailUrl = 'https://google.com' +
+    '&to=' + encodeURIComponent('trenazer.support@gmail.com') +
+    '&su=' + encodeURIComponent(mailSubj) +
     '&body=' + encodeURIComponent(fullBody);
 
   document.getElementById('reportText').value = '';
   if (typeof closeModal === 'function') closeModal('reportModal');
 
-  if (confirm('Обращение отправлено!\n\nЕсли вы находитесь в РФ и зарубежные сервисы ограничены провайдером, нажмите «ОК», чтобы продублировать письмо напрямую через вашу почту (Gmail / Яндекс / Mail).')) {
-    window.location.href = mailtoUrl;
-  }
+  window.open(gmailUrl, '_blank');
+  alert('Открываем окно отправки письма в Gmail.\n\nТекст обращения и адрес trenazer.support@gmail.com также скопированы в буфер обмена — если вы пользуетесь Яндекс.Почтой или Mail.ru, просто вставьте текст (Ctrl+V) в новое письмо.');
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
 function toggleDrawerMenu(e) {
