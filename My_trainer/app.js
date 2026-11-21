@@ -1374,32 +1374,32 @@ function sendReportEmail() {
   const oldText = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
 
-  fetch('https://formsubmit.co', {
+  fetch('https://web3forms.com', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({
-      _subject: 'Lingvo Trainer: ' + subj,
-      _captcha: 'false',
-      Тема: subj,
+      access_key: '6e548fc5-5eb7-44cb-a9ab-919901d743b0',
+      subject: 'Lingvo Trainer: ' + subj,
+      from_name: 'Lingvo Trainer Support',
+      email: email || 'no-reply@lingvotrainer.app',
       Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
-      Почта_для_ответа: email || 'Не указана',
       Сообщение: msg
     })
   })
   .then(res => res.json())
   .then(data => {
     if (btn) { btn.disabled = false; btn.textContent = oldText; }
-    if (data.success === 'true' || data.success === true) {
+    if (data.success) {
       alert('Сообщение успешно отправлено на trenazer.support@gmail.com!');
       document.getElementById('reportText').value = '';
       if (typeof closeModal === 'function') closeModal('reportModal');
     } else {
-      alert('Требуется активация: проверьте почту trenazer.support@gmail.com (включая папку «Спам») и нажмите кнопку Activate Form в письме от FormSubmit.');
+      alert('Не удалось отправить: ' + (data.message || 'проверьте настройки формы'));
     }
   })
   .catch(() => {
     if (btn) { btn.disabled = false; btn.textContent = oldText; }
-    alert('Ошибка сети при отправке. Проверьте интернет или напишите напрямую на trenazer.support@gmail.com.');
+    alert('Ошибка сети при отправке. Проверьте подключение к интернету.');
   });
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
