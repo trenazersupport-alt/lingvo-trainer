@@ -284,5 +284,5 @@ window.render = function() {
     return _prevRenderBeforeVoice();
   }
 };
-
+};
 
