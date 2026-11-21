@@ -25,7 +25,6 @@ body.lang-ko {
 body.lang-en {
   background-image: url('bg_en.jpg');
 }
-
 /* ВЕРХНЯЯ ПАНЕЛЬ */
 .topbar {
   display: flex;
