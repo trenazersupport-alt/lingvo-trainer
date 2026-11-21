@@ -281,7 +281,8 @@ window.render = function() {
       '</div>';
     return;
   }
-  if (typeof _prevRenderBeforeVoice === 'function') {
+    if (typeof _prevRenderBeforeVoice === 'function') {
     return _prevRenderBeforeVoice();
   }
 };
+
