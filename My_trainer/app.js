@@ -1370,37 +1370,60 @@ function sendReportEmail() {
     return;
   }
 
-  const btn = document.querySelector('#reportModal .btn-primary');
-  const oldText = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
+  const langLabel = curLang === 'ko' ? 'Корейский' : 'Английский';
+  const fullBody =
+    'Тема: ' + subj + '\n' +
+    'Язык: ' + langLabel + '\n' +
+    'Почта для ответа: ' + (email || 'Не указана') + '\n\n' +
+    'Сообщение:\n' + msg;
 
-  fetch('https://web3forms.com', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      access_key: '6e548fc5-5eb7-44cb-a9ab-919901d743b0',
-      subject: 'Lingvo Trainer: ' + subj,
-      from_name: 'Lingvo Trainer Support',
-      email: email || 'no-reply@lingvotrainer.app',
-      Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
-      Сообщение: msg
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (btn) { btn.disabled = false; btn.textContent = oldText; }
-    if (data.success) {
-      alert('Сообщение успешно отправлено на trenazer.support@gmail.com!');
-      document.getElementById('reportText').value = '';
-      if (typeof closeModal === 'function') closeModal('reportModal');
-    } else {
-      alert('Не удалось отправить: ' + (data.message || 'проверьте настройки формы'));
-    }
-  })
-  .catch(() => {
-    if (btn) { btn.disabled = false; btn.textContent = oldText; }
-    alert('Ошибка сети при отправке. Проверьте подключение к интернету.');
+  // 1. Отправка через скрытую HTML-форму в Web3Forms (без блокировок fetch/CORS)
+  let iframe = document.getElementById('web3_hidden_frame');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.name = 'web3_hidden_frame';
+    iframe.id = 'web3_hidden_frame';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = 'https://web3forms.com';
+  form.target = 'web3_hidden_frame';
+
+  const payload = {
+    access_key: '6e548fc5-5eb7-44cb-a9ab-919901d743b0',
+    subject: 'Lingvo Trainer: ' + subj,
+    from_name: 'Lingvo Trainer Support',
+    email: email || 'no-reply@lingvotrainer.app',
+    Язык: langLabel,
+    Сообщение: msg
+  };
+
+  Object.entries(payload).forEach(([k, v]) => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = k;
+    inp.value = v;
+    form.appendChild(inp);
   });
+
+  document.body.appendChild(form);
+  form.submit();
+  form.remove();
+
+  // 2. Резервный переход в почтовый клиент / Gmail, если провайдер блокирует Web3Forms
+  const mailtoUrl = 'mailto:trenazer.support@://gmail.com' +
+    encodeURIComponent('Lingvo Trainer: ' + subj) +
+    '&body=' + encodeURIComponent(fullBody);
+
+  document.getElementById('reportText').value = '';
+  if (typeof closeModal === 'function') closeModal('reportModal');
+
+  if (confirm('Обращение отправлено!\n\nЕсли вы находитесь в РФ и зарубежные сервисы ограничены провайдером, нажмите «ОК», чтобы продублировать письмо напрямую через вашу почту (Gmail / Яндекс / Mail).')) {
+    window.location.href = mailtoUrl;
+  }
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
 function toggleDrawerMenu(e) {
