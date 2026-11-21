@@ -1382,16 +1382,17 @@ function sendReportEmail() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText('Кому: trenazer.support@gmail.com\nТема: ' + mailSubj + '\n\n' + fullBody).catch(() => {});
   }
-
-  const gmailUrl = 'https://google.com' +
-    '&to=' + encodeURIComponent('trenazer.support@gmail.com') +
-    '&su=' + encodeURIComponent(mailSubj) +
-    '&body=' + encodeURIComponent(fullBody);
+  const url = new URL('https://google.com');
+  url.searchParams.set('view', 'cm');
+  url.searchParams.set('fs', '1');
+  url.searchParams.set('to', 'trenazer.support@gmail.com');
+  url.searchParams.set('su', mailSubj);
+  url.searchParams.set('body', fullBody);
 
   document.getElementById('reportText').value = '';
   if (typeof closeModal === 'function') closeModal('reportModal');
 
-  window.open(gmailUrl, '_blank');
+  window.open(url.toString(), '_blank');
   alert('Открываем окно отправки письма в Gmail.\n\nТекст обращения и адрес trenazer.support@gmail.com также скопированы в буфер обмена — если вы пользуетесь Яндекс.Почтой или Mail.ru, просто вставьте текст (Ctrl+V) в новое письмо.');
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
