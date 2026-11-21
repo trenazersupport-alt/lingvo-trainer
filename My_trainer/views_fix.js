@@ -195,7 +195,7 @@ window.checkSpeech = function(targetWord, btnEl, itemId) {
   }
 
   rec.onresult = function(e) {
-    const said = e.results.transcript;
+    const said = (e.results && e.results.item(0) && e.results.item(0).item(0)) ? e.results.item(0).item(0).transcript : '';
     const cleanSaid = said.toLowerCase().replace(/[.,!?…—\-]/g, '').trim();
     const cleanTgt = String(targetWord).toLowerCase().replace(/[.,!?…—\-]/g, '').trim();
     const isMatch = cleanSaid === cleanTgt || cleanSaid.includes(cleanTgt) || cleanTgt.includes(cleanSaid);
