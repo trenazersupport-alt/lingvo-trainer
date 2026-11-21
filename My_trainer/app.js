@@ -1146,7 +1146,6 @@ getAllWords = function() {
 if (typeof WORD_GROUPS_LIST !== 'undefined' && !WORD_GROUPS_LIST.some(g => g.id === '🏯 Ханча (Иероглифика)')) {
   WORD_GROUPS_LIST.push({ id: '🏯 Ханча (Иероглифика)', icon: '🏯', desc: 'Слова с китайскими корнями' });
 }
-}
 let selGramMod = null;
 let selGramLesson = null;
 let gramQuizAns = {};
