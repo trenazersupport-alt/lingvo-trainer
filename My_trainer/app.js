@@ -1369,7 +1369,6 @@ function sendReportEmail() {
     alert('Пожалуйста, опишите вопрос или проблему перед отправкой.');
     return;
   }
-
   const langLabel = curLang === 'ko' ? 'Корейский' : 'Английский';
   const fullBody =
     'Тема: ' + subj + '\n' +
