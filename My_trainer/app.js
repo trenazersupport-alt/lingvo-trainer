@@ -1380,7 +1380,7 @@ function sendReportEmail() {
 
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = 'https://formsubmit.co';
+  form.action = 'trenazer.support@gmail.com';
   form.target = 'hidden_mail_frame';
 
   const fields = {
