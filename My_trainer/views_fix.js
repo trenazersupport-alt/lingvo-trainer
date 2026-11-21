@@ -234,4 +234,3 @@ window.checkSpeech = function(targetWord, btnEl, itemId) {
   } catch (e) {}
 };
 };
-
