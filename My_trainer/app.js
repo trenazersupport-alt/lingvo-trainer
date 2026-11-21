@@ -303,20 +303,6 @@ function openReportModal(subject) {
   document.getElementById('reportSubject').value = subject;
   openModal('reportModal');
 }
-
-function sendReportEmail() {
-  const subj = document.getElementById('reportSubject').value;
-  const userMail = document.getElementById('reportUserEmail').value.trim();
-  const text = document.getElementById('reportText').value.trim();
-  if (!text) {
-    alert('Опишите, пожалуйста, проблему или вопрос.');
-    return;
-  }
-  const body = `От пользователя: ${userMail || 'Не указана'}\nТема: ${subj}\n\nОписание:\n${text}`;
-  window.location.href = `mailto:trenazer.support@://gmail.com{encodeURIComponent('Lingvo Trainer: ' + subj)}&body=${encodeURIComponent(body)}`;
-  closeModal('reportModal');
-}
-
 function updateStatsBox() {
   const all = getAllWords();
   document.getElementById('appStatsBox').innerHTML = `
@@ -1402,7 +1388,7 @@ function sendReportEmail() {
     _captcha: 'false',
     Тема: subj,
     Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
-    Почта_для_ответа: userMail || 'Не указана',
+    Почта_для_ответа: email || 'Не указана',
     Сообщение: msg
   };
 
@@ -1418,7 +1404,7 @@ function sendReportEmail() {
   form.submit();
   form.remove();
 
-  alert('✅ Сообщение отправлено на trenazer.support@gmail.com!\n(Если вы отправляете впервые, проверьте почту и папку «Спам» для подтверждения формы).');
+  alert(' Сообщение отправлено на trenazer.support@gmail.com!\n(Если вы отправляете впервые, проверьте почту и папку «Спам» для подтверждения формы).');
   if (typeof closeModal === 'function') closeModal('reportModal');
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
