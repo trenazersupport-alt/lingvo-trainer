@@ -233,4 +233,5 @@ window.checkSpeech = function(targetWord, btnEl, itemId) {
     rec.start();
   } catch (e) {}
 };
+};
 
