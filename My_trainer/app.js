@@ -1366,46 +1366,41 @@ function sendReportEmail() {
   const msg = document.getElementById('reportText').value.trim();
 
   if (!msg) {
-    alert('Ошибка: пожалуйста, опишите вопрос или проблему перед отправкой.');
+    alert('Пожалуйста, опишите вопрос или проблему перед отправкой.');
     return;
   }
- let iframe = document.getElementById('hidden_mail_frame');
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.name = 'hidden_mail_frame';
-    iframe.id = 'hidden_mail_frame';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-  }
 
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = 'trenazer.support@gmail.com';
-  form.target = 'hidden_mail_frame';
+  const btn = document.querySelector('#reportModal .btn-primary');
+  const oldText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Отправка...'; }
 
-  const fields = {
-    _subject: 'Lingvo Trainer: ' + subj,
-    _captcha: 'false',
-    Тема: subj,
-    Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
-    Почта_для_ответа: email || 'Не указана',
-    Сообщение: msg
-  };
-
-  Object.entries(fields).forEach(([key, val]) => {
-    const inp = document.createElement('input');
-    inp.type = 'hidden';
-    inp.name = key;
-    inp.value = val;
-    form.appendChild(inp);
+  fetch('https://formsubmit.co', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      _subject: 'Lingvo Trainer: ' + subj,
+      _captcha: 'false',
+      Тема: subj,
+      Язык: curLang === 'ko' ? 'Корейский' : 'Английский',
+      Почта_для_ответа: email || 'Не указана',
+      Сообщение: msg
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (btn) { btn.disabled = false; btn.textContent = oldText; }
+    if (data.success === 'true' || data.success === true) {
+      alert('Сообщение успешно отправлено на trenazer.support@gmail.com!');
+      document.getElementById('reportText').value = '';
+      if (typeof closeModal === 'function') closeModal('reportModal');
+    } else {
+      alert('Требуется активация: проверьте почту trenazer.support@gmail.com (включая папку «Спам») и нажмите кнопку Activate Form в письме от FormSubmit.');
+    }
+  })
+  .catch(() => {
+    if (btn) { btn.disabled = false; btn.textContent = oldText; }
+    alert('Ошибка сети при отправке. Проверьте интернет или напишите напрямую на trenazer.support@gmail.com.');
   });
-
-  document.body.appendChild(form);
-  form.submit();
-  form.remove();
-
-  alert(' Сообщение отправлено на trenazer.support@gmail.com!\n(Если вы отправляете впервые, проверьте почту и папку «Спам» для подтверждения формы).');
-  if (typeof closeModal === 'function') closeModal('reportModal');
 }
 // УПРАВЛЕНИЕ ВЫДВИЖНОЙ ШТОРКОЙ ПО КНОПКЕ-СТРЕЛОЧКЕ
 function toggleDrawerMenu(e) {
