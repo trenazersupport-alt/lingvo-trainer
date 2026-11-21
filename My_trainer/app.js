@@ -1711,14 +1711,12 @@ window.render = function() {
       '<div class="hero-art-grid">' + cardsHtml + '</div>' +
     '</div>';
 };
-
 const _origRenderBeforeHome = _origRenderForHome;
-_origRenderForHome = function() {
+window._origRenderForHome = function() {
   const ws = document.getElementById('workspace');
   if (ws) ws.style.background = '';
   if (typeof _origRenderBeforeHome === 'function') _origRenderBeforeHome();
 };
-
 if (curTab === 'about') window.render();
 
 
