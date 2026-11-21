@@ -1382,7 +1382,7 @@ function sendReportEmail() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText('Кому: trenazer.support@gmail.com\nТема: ' + mailSubj + '\n\n' + fullBody).catch(() => {});
   }
-  const url = new URL('https://google.com');
+   const url = new URL('https://mail.' + '://google.com');
   url.searchParams.set('view', 'cm');
   url.searchParams.set('fs', '1');
   url.searchParams.set('to', 'trenazer.support@gmail.com');
