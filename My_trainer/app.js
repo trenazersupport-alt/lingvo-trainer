@@ -225,44 +225,6 @@ function speakText(text) {
   utter.rate = 0.92;
   window.speechSynthesis.speak(utter);
 }
-
-// ПРОВЕРКА ПРОИЗНОШЕНИЯ ГОЛОСОМ (СЛОВО ИЛИ ПРЕДЛОЖЕНИЕ)
-function checkSpeech(targetText, feedbackId, btnEl) {
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const fb = document.getElementById(feedbackId);
-  if (!SpeechRec) {
-    fb.textContent = '⚠️ Ваш браузер не поддерживает распознавание речи. Попробуйте Google Chrome.';
-    fb.classList.add('show');
-    return;
-  }
-  const rec = new SpeechRec();
-  rec.lang = curLang === 'ko' ? 'ko-KR' : 'en-US';
-  rec.interimResults = false;
-
-  btnEl.classList.add('mic-listening');
-  fb.textContent = '🎙️ Слушаю... Произнесите фразу четко.';
-  fb.classList.add('show');
-
-  rec.onresult = (e) => {
-    const said = e.results[0][0].transcript;
-    const cleanTarget = targetText.toLowerCase().replace(/[.,!?]/g, '').trim();
-    const cleanSaid = said.toLowerCase().replace(/[.,!?]/g, '').trim();
-    if (cleanSaid === cleanTarget || cleanTarget.includes(cleanSaid) && cleanSaid.length > 2) {
-      fb.innerHTML = `✅ Отлично! Распознано: <b>«${said}»</b>`;
-      fb.style.color = '#2ecc71';
-    } else {
-      fb.innerHTML = `🔄 Услышано: <b>«${said}»</b>. Попробуйте ещё раз!`;
-      fb.style.color = '#ffb84d';
-    }
-  };
-  rec.onerror = () => {
-    fb.textContent = '⚠️ Не удалось распознать голос. Проверьте доступ к микрофону.';
-    fb.style.color = '#ff6b6b';
-  };
-  rec.onend = () => btnEl.classList.remove('mic-listening');
-  rec.start();
-}
-
 // ПОСЛОВНЫЙ ПЕРЕВОД ПРИ НАЖАТИИ НА СЛОВО В ПРЕДЛОЖЕНИИ
 function showWordHint(cardId, word, meaning) {
   const bar = document.getElementById('tip_' + cardId);
@@ -915,17 +877,6 @@ function stopRepeatSession(finished = false) {
 let selectedGroup = '';
 let selectedSubCat = 'all';
 let openDotsId = null;
-
-const WORD_GROUPS_LIST = [
-  { id: '1. Человек и физиология', icon: '🧍', desc: 'Тело, здоровье, еда, одежда, возраст' },
-  { id: '2. Психология и внутренний мир', icon: '🧠', desc: 'Эмоции, характер, память, восприятие' },
-  { id: '3. Общение и социум', icon: '💬', desc: 'Этикет, споры, семья, профессии' },
-  { id: '4. Природа и мир', icon: '🌿', desc: 'Животные, растения, погода, космос' },
-  { id: '5. Быт и пространство', icon: '🏠', desc: 'Дом, транспорт, город, техника' },
-  { id: '6. Абстрактные понятия', icon: '⏳', desc: 'Время, форма, счет, действия, свойства' },
-  { id: '7. Культура и наука', icon: '🎭', desc: 'Искусство, наука, закон, религия' }
-];
-
 function toggleDotsMenu(id, e) {
   e.stopPropagation();
   openDotsId = (openDotsId === id) ? null : id;
@@ -980,95 +931,6 @@ function renderWordRowCompact(item) {
     </div>
   `;
 }
-
-const _origRenderForWords = render;
-render = function() {
-  if (curTab !== 'words') return _origRenderForWords();
-  const ws = document.getElementById('workspace');
-  const all = getAllWords();
-
-  if (!selectedGroup && !searchQuery.trim()) {
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>📚 База слов — выберите раздел</h2>
-        <button class="btn-primary" onclick="openModal('addWordModal')">➕ Добавить слово</button>
-      </div>
-      <div class="toolbar">
-        <input type="text" style="display:none" aria-hidden="true" />
-        <input type="password" style="display:none" aria-hidden="true" />
-        <input type="search" readonly onfocus="this.removeAttribute('readonly')" name="search_field_no_autofill" autocomplete="off" class="input-dark" placeholder="Быстрый поиск по всем разделам..." value="${searchQuery}" oninput="searchQuery=this.value; render()" />
-      </div>
-      <div class="cat-grid">
-        ${WORD_GROUPS_LIST.map(g => {
-          const count = all.filter(w => w.group === g.id).length;
-          return `
-           <div class="cat-tile" onclick="selectedGroup='${g.id}'; selectedSubCat='all'; window.render()">
-              <div>
-                <div style="font-size:1.6rem; margin-bottom:8px;">${g.icon}</div>
-                <div class="cat-tile-title">${g.id}</div>
-                <div class="cat-tile-sub">${g.desc}</div>
-              </div>
-              <div style="margin-top:12px; font-size:0.85rem; color:#ff6b6b; font-weight:600;">Слов в разделе: ${count} →</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-    return;
-  let list = selectedGroup ? all.filter(function(w) { return w.group === selectedGroup; }) : all;
-  const subCats = ['all'].concat(Array.from(new Set(list.map(function(w) { return w.cat; }).filter(Boolean))));
-  if (selectedSubCat !== 'all') list = list.filter(function(w) { return w.cat === selectedSubCat; });
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    list = list.filter(function(w) {
-      return w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q));
-    });
-  }
-
-  const PER_PAGE = 9;
-  const pKey = curLang + '_' + selectedGroup + '_' + selectedSubCat + '_' + searchQuery;
-  if (window._ltWordsSubKey !== pKey) {
-    window._ltWordsSubKey = pKey;
-    window._ltWordsSubPage = 1;
-  }
-  const totalPages = Math.max(1, Math.ceil(list.length / PER_PAGE));
-  if (!window._ltWordsSubPage || window._ltWordsSubPage > totalPages) window._ltWordsSubPage = 1;
-  const start = (window._ltWordsSubPage - 1) * PER_PAGE;
-  const pageList = list.slice(start, start + PER_PAGE);
-
-  const subCatOpts = subCats.map(function(c) {
-    return '<option value="' + c + '" ' + (selectedSubCat === c ? 'selected' : '') + '>' + (c === 'all' ? 'Все подкатегории' : c) + '</option>';
-  }).join('');
-
-  const rowsHtml = pageList.length
-    ? pageList.map(renderWordRowCompact).join('')
-    : '<p style="color:#888;">В этой категории пока нет слов.</p>';
-
-  const pagerHtml = list.length > PER_PAGE
-    ? '<div class="lt-pager-bar">' +
-        '<span class="lt-pager-info">Страница ' + window._ltWordsSubPage + ' из ' + totalPages + '</span>' +
-        '<div class="lt-pager-btns">' +
-          '<button class="lt-pager-btn" onclick="window._ltWordsSubPage=Math.max(1, window._ltWordsSubPage-1); render();" ' + (window._ltWordsSubPage <= 1 ? 'disabled' : '') + '>Назад</button>' +
-          '<button class="lt-pager-btn" onclick="window._ltWordsSubPage=Math.min(' + totalPages + ', window._ltWordsSubPage+1); render();" ' + (window._ltWordsSubPage >= totalPages ? 'disabled' : '') + '>Вперёд</button>' +
-        '</div>' +
-      '</div>'
-    : '';
-const grpObj = selectedGroup ? WORD_GROUPS_LIST.find(function(g) { return g.id === selectedGroup; }) : null;
-  ws.innerHTML =
-    '<div class="section-header">' +
-      '<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">' +
-        '<button class="btn-secondary" onclick="selectedGroup=null; searchQuery=\'\'; render()">← К разделам</button>' +
-        '<h2>' + (grpObj ? grpObj.title : 'Результаты поиска') + ' (' + list.length + ')</h2>' +
-      '</div>' +
-      '<button class="btn-primary" onclick="openModal(\'addWordModal\')">+ Добавить слово</button>' +
-    '</div>' +
-    '<div class="toolbar">' +
-      '<input type="search" class="input-dark" placeholder="Поиск в разделе..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" />' +
-      '<select class="select-dark" onchange="selectedSubCat=this.value; render()">' + subCatOpts + '</select>' +
-    '</div>' +
-    '<div class="word-list">' + rowsHtml + '</div>' +
-    pagerHtml;
-};
 // УНИВЕРСАЛЬНАЯ ПРОВЕРКА ПРОИЗНОШЕНИЯ ДЛЯ ВСЕХ РАЗДЕЛОВ
 function checkSpeech(targetWord, rawBtn, itemId) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1284,70 +1146,6 @@ getAllWords = function() {
 if (typeof WORD_GROUPS_LIST !== 'undefined' && !WORD_GROUPS_LIST.some(g => g.id === '🏯 Ханча (Иероглифика)')) {
   WORD_GROUPS_LIST.push({ id: '🏯 Ханча (Иероглифика)', icon: '🏯', desc: 'Слова с китайскими корнями' });
 }
-
-const _origRenderForHanja = render;
-render = function() {
-  if (curTab !== 'hanja') return _origRenderForHanja();
-  const ws = document.getElementById('workspace');
-
-  if (curLang !== 'ko') {
-     ws.innerHTML =
-      '<div class="section-header"><h2>Ханча (Корни иероглифов)</h2></div>' +
-      '<div class="game-box" style="margin-top:20px;">' +
-        '<p style="color:#ccc;">Раздел <b>Ханча</b> относится к корейскому языку. Переключите язык на <b>Корейский</b> в верхнем меню!</p>' +
-      '</div>';
-    return;
-  }
-
- const listData = typeof hanjaFullList !== 'undefined' ? hanjaFullList : [];
-  if (!selectedHanjaRoot && !searchQuery.trim()) {
-    const tilesHtml = listData.map(function(h) {
-      return '<div class="cat-tile" onclick="selectedHanjaRoot=\'' + h.root + '\'; render()">' +
-        '<div style="font-size:2rem; color:#ff6b6b; font-weight:700; margin-bottom:6px;">' + h.root + '</div>' +
-        '<div class="cat-tile-title">' + h.meaning + '</div>' +
-        '<div class="cat-tile-sub">Слов с корнем: ' + (h.words ? h.words.length : 0) + '</div>' +
-      '</div>';
-    }).join('');
-
-    ws.innerHTML =
-      '<div class="section-header"><h2>Ханча — выберите корень (' + listData.length + ')</h2></div>' +
-      '<div class="toolbar"><input type="search" class="input-dark" placeholder="Поиск по корню или слову Ханча..." value="' + searchQuery + '" oninput="searchQuery=this.value; render()" /></div>' +
-      '<div class="cat-grid">' + tilesHtml + '</div>';
-    return;
-  }
-
-  let wordsList = [];
-  let headerTitle = 'Поиск по Ханче';
-  if (selectedHanjaRoot) {
-    const rootObj = listData.find(function(h) { return h.root === selectedHanjaRoot; });
-    wordsList = rootObj && rootObj.words ? rootObj.words : [];
-    headerTitle = rootObj ? (rootObj.root + ' — ' + rootObj.meaning) : 'Корень Ханча';
-  } else {
-    listData.forEach(function(h) {
-      if (h.words) wordsList = wordsList.concat(h.words);
-    });
-  }
-
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    wordsList = wordsList.filter(function(w) {
-      return w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q) || (w.translit && w.translit.toLowerCase().includes(q));
-    });
-  }
-
-  const rowsHtml = wordsList.length
-    ? wordsList.map(renderWordRowCompact).join('')
-    : '<p style="color:#888;">Ничего не найдено.</p>';
-
-  ws.innerHTML =
-    '<div class="section-header">' +
-      '<div style="display:flex; align-items:center; gap:12px;">' +
-        '<button class="btn-secondary" onclick="selectedHanjaRoot=\'\'; searchQuery=\'\'; render()">← К корням</button>' +
-        '<h2>' + headerTitle + ' (' + wordsList.length + ')</h2>' +
-      '</div>' +
-    '</div>' +
-    '<div class="word-list">' + rowsHtml + '</div>';
-};
 }
 let selGramMod = null;
 let selGramLesson = null;
