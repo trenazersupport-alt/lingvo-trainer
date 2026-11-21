@@ -169,3 +169,60 @@ window.render = function() {
     return _prevRenderBeforeViewsFix();
   }
 };
+/* === ИСПРАВЛЕНИЕ ПРОВЕРКИ ПРОИЗНОШЕНИЯ (МИКРОФОНА) В КАРТОЧКАХ === */
+window.checkSpeech = function(targetWord, btnEl, itemId) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    alert('Распознавание речи не поддерживается в этом браузере. Используйте Chrome или Edge.');
+    return;
+  }
+  const legacyId = typeof btnEl === 'string' ? btnEl : itemId;
+  const resBox = document.getElementById('speech_res_' + legacyId) || document.getElementById('speech_' + legacyId);
+  const oldHtml = btnEl && btnEl.tagName ? btnEl.innerHTML : '';
+
+  const rec = new SR();
+  rec.lang = (typeof curLang !== 'undefined' && curLang === 'ko') ? 'ko-KR' : 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+
+  if (btnEl && btnEl.tagName) {
+    btnEl.style.borderColor = '#ef4444';
+    btnEl.style.background = '#991b1b';
+  }
+  if (resBox) {
+    resBox.style.color = '#ffb84d';
+    resBox.textContent = 'Слушаю... говорите в микрофон';
+  }
+
+  rec.onresult = function(e) {
+    const said = e.results.transcript;
+    const cleanSaid = said.toLowerCase().replace(/[.,!?…—\-]/g, '').trim();
+    const cleanTgt = String(targetWord).toLowerCase().replace(/[.,!?…—\-]/g, '').trim();
+    const isMatch = cleanSaid === cleanTgt || cleanSaid.includes(cleanTgt) || cleanTgt.includes(cleanSaid);
+    if (resBox) {
+      resBox.style.color = isMatch ? '#2ecc71' : '#ffb84d';
+      resBox.textContent = isMatch
+        ? 'Верно! Распознано: «' + said + '»'
+        : 'Услышано: «' + said + '» (Эталон: ' + targetWord + ')';
+    }
+  };
+
+  rec.onerror = function(ev) {
+    if (resBox) {
+      resBox.style.color = '#ff6b6b';
+      resBox.textContent = 'Ошибка микрофона: ' + (ev.error || 'нет доступа');
+    }
+  };
+
+  rec.onend = function() {
+    if (btnEl && btnEl.tagName) {
+      btnEl.style.borderColor = '';
+      btnEl.style.background = '';
+      if (oldHtml) btnEl.innerHTML = oldHtml;
+    }
+  };
+
+  try {
+    rec.start();
+  } catch (e) {}
+};
