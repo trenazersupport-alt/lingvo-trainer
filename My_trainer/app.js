@@ -472,16 +472,53 @@ function render() {
         </div>
       `).join('')}
     `;
-  } else if (curTab === 'voice') {
-    const list = getAllWords();
-    const rnd = list[Math.floor(Math.random() * list.length)];
-    ws.innerHTML = `
-      <div class="section-header">
-        <h2>🎙️ Тренировка произношения</h2>
-        <button class="btn-secondary" onclick="render()">🔄 Следующее слово</button>
-      </div>
-      ${rnd ? renderWordCard(rnd) : ''}
-    `;
+   } else if (curTab === 'voice') {
+    const all = getAllWords();
+    if (!all.length) {
+      ws.innerHTML = '<div class="section-header"><h2>Тренировка произношения</h2></div><p style="color:#ccc;">Словарь пуст.</p>';
+      return;
+    }
+    if (!window._ltVoiceWordId || !all.some(w => w.id === window._ltVoiceWordId)) {
+      window._ltVoiceWordId = all[Math.floor(Math.random() * all.length)].id;
+    }
+    const w = all.find(item => item.id === window._ltVoiceWordId) || all.at(0);
+    const isLearned = learnedIds.includes(w.id);
+    const isPersonal = personalIds.includes(w.id);
+    const isHard = hardIds.includes(w.id);
+    const safeWord = String(w.word || '').replace(/'/g, "\\'");
+    const exText = w.example || w.ex || '';
+    const exTr = w.exampleTr || w.exTr || '';
+    const safeEx = String(exText).replace(/'/g, "\\'");
+
+    ws.innerHTML =
+      '<div class="section-header">' +
+        '<h2>Тренировка произношения</h2>' +
+        '<button class="btn-primary" onclick="window._ltVoiceWordId=null; render();">Следующее слово</button>' +
+      '</div>' +
+      '<div class="game-box" style="max-width:none; text-align:left; background:rgba(14,15,20,0.86); border:1px solid rgba(255,255,255,0.14);">' +
+        '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">' +
+          '<div>' +
+            '<div style="font-size:1.7rem; font-weight:700; color:#fff;">' + w.word + '</div>' +
+            (w.translit ? '<div style="color:#f87171; font-size:0.95rem; margin-top:2px;">' + w.translit + '</div>' : '') +
+            '<div style="color:#e4e6eb; font-size:1.1rem; margin-top:8px;">' + w.meaning + '</div>' +
+          '</div>' +
+          '<button class="btn-secondary" onclick="speakText(\'' + safeWord + '\')">Озвучить слово</button>' +
+        '</div>' +
+        (exText ? '<div style="margin-top:16px; padding:12px 14px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626;">' +
+          '<div style="color:#fff; font-weight:600;">' + exText + '</div>' +
+          (exTr ? '<div style="color:#9ea4b0; font-size:0.88rem; margin-top:4px;">' + exTr + '</div>' : '') +
+        '</div>' : '') +
+        '<div id="speech_res_' + w.id + '" style="margin-top:14px; min-height:22px; font-weight:600; font-size:0.92rem;"></div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.1);">' +
+          '<button class="btn-primary" onclick="window.checkSpeech(\'' + safeWord + '\', this, \'' + w.id + '\')">Произнести слово</button>' +
+          (exText ? '<button class="btn-secondary" onclick="speakText(\'' + safeEx + '\')">Озвучить фразу</button>' : '') +
+          (exText ? '<button class="btn-secondary" onclick="window.checkSpeech(\'' + safeEx + '\', this, \'' + w.id + '\')">Произнести фразу</button>' : '') +
+          '<button class="btn-secondary" onclick="toggleLearned(\'' + w.id + '\'); render();">' + (isLearned ? 'Выучено' : 'Отметить выученным') + '</button>' +
+          '<button class="btn-secondary" onclick="toggleHard(\'' + w.id + '\'); render();">' + (isHard ? 'Убрать из повтора' : 'Повторить позже') + '</button>' +
+          '<button class="btn-secondary" onclick="togglePersonal(\'' + w.id + '\'); render();">' + (isPersonal ? 'В личном словаре' : '+ В личный словарь') + '</button>' +
+          '<button class="btn-secondary" style="color:#ff8787;" onclick="openReport(\'' + safeWord + '\')">Ошибка</button>' +
+        '</div>' +
+      '</div>';
   } else if (curTab === 'game') {
     renderGameScreen(ws);
   } else if (curTab === 'repeatGame') {
