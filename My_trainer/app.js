@@ -320,9 +320,9 @@ function sendReportEmail() {
 function updateStatsBox() {
   const all = getAllWords();
   document.getElementById('appStatsBox').innerHTML = `
-    <div>📚 Всего слов в текущем языке: <b>${all.length}</b></div>
-    <div>✅ Выучено вами: <b>${learnedIds.length}</b></div>
-    <div>⭐ В личном словаре: <b>${personalIds.length}</b></div>
+    <div> Всего слов в текущем языке: <b>${all.length}</b></div>
+    <div> Выучено вами: <b>${learnedIds.length}</b></div>
+    <div> В личном словаре: <b>${personalIds.length}</b></div>
   `;
 }
 
@@ -331,51 +331,47 @@ function renderWordCard(item) {
   const isLearned = learnedIds.includes(item.id);
   const isHard = hardIds.includes(item.id);
   const isPersonal = personalIds.includes(item.id);
-  const safeWord = item.word.replace(/'/g, "\\'");
-    const safeEx = (item.ex || '').replace(/'/g, "\\'");
+  const safeWord = String(item.word || '').replace(/'/g, "\\'");
+  const exText = item.ex || item.example || '';
+  const exTr = item.exTr || item.exampleTr || '';
+  const safeEx = String(exText).replace(/'/g, "\\'");
 
   return `
-    <div class="word-card ${isLearned ? 'learned' : ''}">
-      <div class="card-top">
+    <div class="word-card ${isLearned ? 'learned' : ''}" style="text-align:left; background:rgba(14,15,20,0.86); border:1px solid ${isLearned ? 'rgba(220,38,38,0.45)' : 'rgba(255,255,255,0.14)'};">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
         <div>
-          <div class="word-main">${item.word}</div>
-          <div class="word-translit">${item.translit || ''}</div>
+          <div style="font-size:1.55rem; font-weight:700; color:#fff;">${item.word}</div>
+          ${item.translit ? `<div style="color:#f87171; font-size:0.92rem; margin-top:2px;">${item.translit}</div>` : ''}
+          <div style="color:#e4e6eb; font-size:1.05rem; margin-top:6px;">${item.meaning}</div>
+          ${(item.cat || item.pos) ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+            ${item.cat ? `<span class="tag">${item.cat}</span>` : ''}
+            ${item.pos ? `<span class="tag">${item.pos}</span>` : ''}
+          </div>` : ''}
         </div>
-        <button class="action-chip" onclick="speakText('${safeWord}')" title="Озвучить слово">🔊 Слово</button>
-      </div>
-      <div class="word-meaning">${item.meaning}</div>
-      <div class="tags-row">
-        <span class="tag">${item.cat}</span>
-        <span class="tag">${item.pos || ''}</span>
+        <button class="btn-secondary" onclick="speakText('${safeWord}')" title="Озвучить слово">Озвучить слово</button>
       </div>
 
-      <div class="example-box">
-        <div class="example-sentence">${buildInteractiveSentence(item)}</div>
-        <div class="example-translation">${item.exTr}</div>
+      ${exText ? `
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626;">
+        <div style="color:#fff; font-weight:600;">${buildInteractiveSentence(item)}</div>
+        ${exTr ? `<div style="color:#9ea4b0; font-size:0.86rem; margin-top:4px;">${exTr}</div>` : ''}
         <div class="word-tooltip-bar" id="tip_${item.id}"></div>
-      </div>
+      </div>` : ''}
 
-      <div class="speech-feedback" id="fb_${item.id}"></div>
+      <div id="speech_res_${item.id}" style="margin-top:12px; min-height:20px; font-weight:600; font-size:0.9rem;"></div>
 
-      <div class="card-actions">
-        <button class="action-chip" onclick="speakText('${safeEx}')">🔊 Пример</button>
-        <button class="action-chip" onclick="checkSpeech('${safeWord}', 'fb_${item.id}', this)">🎙️ Слово</button>
-        <button class="action-chip" onclick="checkSpeech('${safeEx}', 'fb_${item.id}', this)">🎙️ Фраза</button>
-        <button class="action-chip ${isLearned ? 'learned-active' : ''}" onclick="toggleLearned('${item.id}')">
-          ${isLearned ? '✅ Выучено' : '⬜ Выучить'}
-        </button>
-        <button class="action-chip" style="${isHard ? 'border-color:#ffb84d; color:#ffb84d;' : ''}" onclick="toggleHard('${item.id}')">
-  ${isHard ? '🔁 Повторю позже' : '🕒 Повторить позже'}
-</button>
-        <button class="action-chip" onclick="togglePersonal('${item.id}')">
-          ${isPersonal ? '⭐ В словаре' : '☆ В личный'}
-        </button>
-        <button class="action-chip" onclick="openReportModal('Ошибка в карточке: ${safeWord}')" title="Сообщить об ошибке">🚩 Ошибка</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
+        <button class="btn-primary" onclick="window.checkSpeech('${safeWord}', this, '${item.id}')">Произнести слово</button>
+        ${exText ? `<button class="btn-secondary" onclick="speakText('${safeEx}')">Озвучить фразу</button>` : ''}
+        ${exText ? `<button class="btn-secondary" onclick="window.checkSpeech('${safeEx}', this, '${item.id}')">Произнести фразу</button>` : ''}
+        <button class="btn-secondary" onclick="toggleLearned('${item.id}')">${isLearned ? 'Выучено' : 'Отметить выученным'}</button>
+        <button class="btn-secondary" onclick="toggleHard('${item.id}')">${isHard ? 'Убрать из повтора' : 'Повторить позже'}</button>
+        <button class="btn-secondary" onclick="togglePersonal('${item.id}')">${isPersonal ? 'В личном словаре' : '+ В личный словарь'}</button>
+        <button class="btn-secondary" style="color:#ff8787;" onclick="openReportModal('Ошибка в карточке: ${safeWord}')">Ошибка</button>
       </div>
     </div>
   `;
 }
-
 // ГЛАВНЫЙ РЕНДЕР РАБОЧЕЙ ОБЛАСТИ
 function render() {
   const ws = document.getElementById('workspace');
