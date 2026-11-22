@@ -2305,3 +2305,37 @@ header, .topbar {
   flex-direction: column;
   gap: 5px;
 }
+/* === КНОПКА ОБЛОЖКИ И АКТИВНЫЕ СЧЁТЧИКИ ПРОФИЛЯ === */
+.lt-prof-cover-menu-wrap {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 10;
+}
+.lt-prof-cover-arrow-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(14, 15, 20, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.lt-prof-cover-arrow-btn:hover {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.25);
+}
+.lt-prof-stat-btn {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.lt-prof-stat-btn:hover {
+  border-color: rgba(220, 38, 38, 0.65);
+  background: rgba(220, 38, 38, 0.12);
+}
