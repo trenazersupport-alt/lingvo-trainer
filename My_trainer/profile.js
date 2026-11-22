@@ -319,16 +319,50 @@
     const wall = document.querySelector('.lt-prof-col-center');
     if (wall) wall.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-    window.ltOpenLanguageCourse = function (langCode) {
+   window.ltOpenLanguageCourse = function (langCode) {
     if (typeof setLang === 'function') setLang(langCode);
     const headerLangBtn = document.querySelector('[data-lang="' + langCode + '"], #langBtn_' + langCode);
     if (headerLangBtn) headerLangBtn.click();
+
     if (typeof switchTab === 'function') {
       switchTab('home');
     } else {
       window.curTab = 'home';
       if (typeof render === 'function') render();
     }
+
+    setTimeout(function () {
+      // 1. Автоматически открываем боковую шторку меню
+      const sidebar = document.querySelector('.sidebar, .side-menu, #sidebar, nav.drawer, [class*="sidebar"]');
+      if (sidebar) {
+        sidebar.classList.add('open', 'is-open', 'active');
+        sidebar.style.transform = 'translateX(0)';
+        sidebar.style.display = '';
+      } else {
+        const menuToggle = document.querySelector('#menuBtn, .menu-toggle, .burger-btn, header button');
+        if (menuToggle && !menuToggle.closest('#ltHistNavWrap')) menuToggle.click();
+      }
+
+      // 2. Убираем заглушку «Раздел в разработке» и показываем панель выбранного курса
+      const ws = document.getElementById('workspace');
+      if (ws && ws.textContent.includes('Раздел в разработке')) {
+        const isKo = langCode === 'ko';
+        ws.innerHTML =
+          '<div class="lt-soc-shell" style="max-width:960px;">' +
+            '<div class="lt-prof-card-title" style="margin-bottom:12px;">' +
+              '<span>' + (isKo ? 'Курс корейского языка (KO)' : 'Курс английского языка (EN)') + '</span>' +
+              '<span class="tag">' + (isKo ? 'Основной курс' : 'Дополнительный курс') + '</span>' +
+            '</div>' +
+            '<div style="color:#b8bec9; font-size:0.88rem; margin-bottom:16px;">Выберите раздел в левой шторке или перейдите сразу к тренировке:</div>' +
+            '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">' +
+              '<button class="btn-primary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'words\');">База слов →</button>' +
+              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'vocab\');">Личный словарь →</button>' +
+              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'grammar\');">Грамматика →</button>' +
+              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'voice\');">Тренировка голоса →</button>' +
+            '</div>' +
+          '</div>';
+      }
+    }, 60);
   };
    window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
