@@ -205,12 +205,95 @@
     render();
   };
 
-  window.addProfileNote = function () {
+   window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
     const b = document.getElementById('ltNewNoteBody');
     if (!t || !b || !t.value.trim() || !b.value.trim()) return;
     const p = loadProfile();
     p.notes.unshift({ id: 'n_' + Date.now(), title: t.value.trim(), text: b.value.trim() });
+    saveProfile(p);
+    render();
+  };
+
+  window.deleteProfileNote = function (id) {
+    const p = loadProfile();
+    p.notes = p.notes.filter(x => x.id !== id);
+    saveProfile(p);
+    render();
+  };
+
+  window.addProfileLink = function () {
+    const t = document.getElementById('ltNewLinkTitle');
+    const u = document.getElementById('ltNewLinkUrl');
+    if (!t || !u || !t.value.trim() || !u.value.trim()) return;
+    let url = u.value.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+    const p = loadProfile();
+    p.savedLinks.unshift({ id: 'l_' + Date.now(), title: t.value.trim(), url: url });
+    saveProfile(p);
+    render();
+  };
+
+  window.deleteProfileLink = function (id) {
+    const p = loadProfile();
+    p.savedLinks = p.savedLinks.filter(x => x.id !== id);
+    saveProfile(p);
+    render();
+  };
+
+  window.addProfileMedia = function () {
+    const typeEl = document.getElementById('ltNewMediaType');
+    const t = document.getElementById('ltNewMediaTitle');
+    const u = document.getElementById('ltNewMediaUrl');
+    if (!t || !u || !t.value.trim() || !u.value.trim()) return;
+    let url = u.value.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+    const p = loadProfile();
+    if (!Array.isArray(p.mediaItems)) p.mediaItems = [];
+    p.mediaItems.unshift({
+      id: 'm_' + Date.now(),
+      kind: typeEl ? typeEl.value : 'Видео',
+      title: t.value.trim(),
+      url: url
+    });
+    saveProfile(p);
+    render();
+  };
+
+  window.deleteProfileMedia = function (id) {
+    const p = loadProfile();
+    p.mediaItems = (p.mediaItems || []).filter(x => x.id !== id);
+    saveProfile(p);
+    render();
+  };
+
+  window.acceptSuggestedFriend = function (id) {
+    const p = loadProfile();
+    const idx = p.suggestedFriends.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    const person = p.suggestedFriends.splice(idx, 1).at(0);
+    p.friends.unshift({
+      id: person.id,
+      name: person.name,
+      handle: person.handle,
+      lang: person.lang,
+      isFriend: true
+    });
+    saveProfile(p);
+    render();
+  };
+
+  window.removeFriendFromProfile = function (id) {
+    const p = loadProfile();
+    p.friends = p.friends.filter(x => x.id !== id);
+    saveProfile(p);
+    render();
+  };
+
+  window.toggleJoinCommunity = function (id) {
+    const p = loadProfile();
+    const cm = p.communities.find(x => x.id === id);
+    if (cm) cm.joined = !cm.joined;
     saveProfile(p);
     render();
   };
@@ -220,15 +303,6 @@
     const isSelf = st.viewMode === 'self';
     const learnedCount = typeof learnedIds !== 'undefined' ? learnedIds.length : 0;
     const visiblePhotos = isSelf ? p.photos : p.photos.filter(ph => !ph.hidden);
-
-    const coverStyle = p.cover
-      ? `background-image:url('${p.cover}'); background-size:cover; background-position:center;`
-      : `background:linear-gradient(120deg, #181a22 0%, #2d1216 55%, #121318 100%);`;
-
-    const avatarHtml = p.avatar
-      ? `<img src="${p.avatar}" alt="${p.nick}" style="width:100%; height:100%; object-fit:cover;" />`
-      : `<div class="lt-prof-avatar-placeholder">${(p.nick || 'U').at(0).toUpperCase()}</div>`;
-
     let rightActionHtml = '';
     if (isSelf) {
       rightActionHtml = `
@@ -259,60 +333,94 @@
 
     let subPanelHtml = '';
     if (st.activeSubPanel === 'notes') {
-      subPanelHtml = `
-        <div class="lt-prof-card" style="margin-bottom:12px;">
-          <div class="lt-prof-card-title">Личные заметки и конспекты</div>
-          ${isSelf ? `
-          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
-            <input id="ltNewNoteTitle" class="input-dark" placeholder="Заголовок заметки" style="flex:1; min-width:180px;" />
-            <input id="ltNewNoteBody" class="input-dark" placeholder="Текст правила или примера..." style="flex:2; min-width:220px;" />
-            <button class="btn-primary" onclick="addProfileNote()">Сохранить</button>
-          </div>` : ''}
-          ${p.notes.map(n => `
-            <div style="padding:8px 10px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; margin-bottom:6px;">
-              <div style="font-weight:700; color:#fff; font-size:0.9rem;">${n.title}</div>
-              <div style="color:#b8bec9; font-size:0.84rem; margin-top:3px;">${n.text}</div>
-            </div>
-          `).join('')}
-        </div>
-      `;
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Личные заметки и конспекты</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'notes\')">Закрыть</button>' +
+        '</div>' +
+        (isSelf ? (
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
+            '<input id="ltNewNoteTitle" class="input-dark" placeholder="Заголовок заметки" style="flex:1; min-width:170px;" />' +
+            '<input id="ltNewNoteBody" class="input-dark" placeholder="Текст правила или примера..." style="flex:2; min-width:210px;" />' +
+            '<button class="btn-primary" onclick="addProfileNote()">Сохранить</button>' +
+          '</div>'
+        ) : '') +
+        (p.notes.length ? p.notes.map(function (n) {
+          return '<div style="padding:8px 10px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; margin-bottom:6px; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">' +
+            '<div>' +
+              '<div style="font-weight:700; color:#fff; font-size:0.9rem;">' + n.title + '</div>' +
+              '<div style="color:#b8bec9; font-size:0.84rem; margin-top:3px;">' + n.text + '</div>' +
+            '</div>' +
+            (isSelf ? '<button class="btn-secondary" style="padding:2px 7px; font-size:0.72rem; color:#ff8787;" onclick="deleteProfileNote(\'' + n.id + '\')">Удалить</button>' : '') +
+          '</div>';
+        }).join('') : '<div style="color:#9ea4b0; font-size:0.84rem;">Заметок пока нет.</div>') +
+      '</div>';
     } else if (st.activeSubPanel === 'links') {
-      subPanelHtml = `
-        <div class="lt-prof-card" style="margin-bottom:12px;">
-          <div class="lt-prof-card-title">Сохранённые ссылки и материалы</div>
-          ${p.savedLinks.map(l => `
-            <div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px;">
-              <a href="${l.url}" target="_blank" style="color:#f87171; font-weight:600; text-decoration:none;">${l.title} ↗</a>
-            </div>
-          `).join('')}
-        </div>
-      `;
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Сохранённые ссылки и материалы</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'links\')">Закрыть</button>' +
+        '</div>' +
+        (isSelf ? (
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
+            '<input id="ltNewLinkTitle" class="input-dark" placeholder="Название ресурса" style="flex:1; min-width:170px;" />' +
+            '<input id="ltNewLinkUrl" class="input-dark" placeholder="https://..." style="flex:2; min-width:210px;" />' +
+            '<button class="btn-primary" onclick="addProfileLink()">Добавить</button>' +
+          '</div>'
+        ) : '') +
+        (p.savedLinks.length ? p.savedLinks.map(function (l) {
+          return '<div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px;">' +
+            '<a href="' + l.url + '" target="_blank" style="color:#f87171; font-weight:600; text-decoration:none; font-size:0.88rem;">' + l.title + ' ↗</a>' +
+            (isSelf ? '<button class="btn-secondary" style="padding:2px 7px; font-size:0.72rem; color:#ff8787;" onclick="deleteProfileLink(\'' + l.id + '\')">Удалить</button>' : '') +
+          '</div>';
+        }).join('') : '<div style="color:#9ea4b0; font-size:0.84rem;">Сохранённых ссылок пока нет.</div>') +
+      '</div>';
     } else if (st.activeSubPanel === 'media') {
-      subPanelHtml = `
-        <div class="lt-prof-card" style="margin-bottom:12px;">
-          <div class="lt-prof-card-title">Видео и аудиоматериалы профиля</div>
-          <div style="color:#9ea4b0; font-size:0.86rem;">Здесь отображаются сохранённые видеоразборы диалогов и аудиодорожки для аудирования.</div>
-        </div>
-      `;
+      const mediaList = Array.isArray(p.mediaItems) ? p.mediaItems : [
+        { id: 'm_def1', kind: 'Видео', title: 'Разбор корейских диалогов (TOPIK I)', url: 'https://youtube.com' },
+        { id: 'm_def2', kind: 'Аудио', title: 'Подкаст для тренировки произношения', url: 'https://youtube.com' }
+      ];
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Видео и музыка для обучения</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'media\')">Закрыть</button>' +
+        '</div>' +
+        (isSelf ? (
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">' +
+            '<select id="ltNewMediaType" class="input-dark" style="width:110px;"><option value="Видео">Видео</option><option value="Аудио">Аудио</option></select>' +
+            '<input id="ltNewMediaTitle" class="input-dark" placeholder="Название видео или трека" style="flex:1; min-width:160px;" />' +
+            '<input id="ltNewMediaUrl" class="input-dark" placeholder="Ссылка (YouTube / аудио)" style="flex:2; min-width:200px;" />' +
+            '<button class="btn-primary" onclick="addProfileMedia()">Добавить</button>' +
+          '</div>'
+        ) : '') +
+        mediaList.map(function (m) {
+          return '<div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.08); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px;">' +
+            '<div>' +
+              '<span class="tag" style="font-size:0.7rem; padding:2px 6px; margin-right:6px;">' + m.kind + '</span>' +
+              '<a href="' + m.url + '" target="_blank" style="color:#fff; font-weight:600; text-decoration:none; font-size:0.88rem;">' + m.title + ' ↗</a>' +
+            '</div>' +
+            (isSelf ? '<button class="btn-secondary" style="padding:2px 7px; font-size:0.72rem; color:#ff8787;" onclick="deleteProfileMedia(\'' + m.id + '\')">Удалить</button>' : '') +
+          '</div>';
+        }).join('') +
+      '</div>';
     } else if (st.activeSubPanel === 'friends') {
-      subPanelHtml = `
-        <div class="lt-prof-card" style="margin-bottom:12px;">
-          <div class="lt-prof-card-title">Все друзья (${p.friends.length})</div>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:8px;">
-            ${p.friends.map(f => `
-              <div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; gap:10px;">
-                <div class="lt-mini-ava">${f.name.at(0)}</div>
-                <div>
-                  <div style="color:#fff; font-weight:600; font-size:0.88rem;">${f.name}</div>
-                  <div style="color:#9ea4b0; font-size:0.78rem;">${f.lang}</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Все друзья (' + p.friends.length + ')</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'friends\')">Закрыть</button>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:8px;">' +
+          p.friends.map(function (f) {
+            return '<div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:space-between; gap:8px;">' +
+              '<div style="display:flex; align-items:center; gap:10px; min-width:0;">' +
+                '<div class="lt-mini-ava">' + f.name.at(0) + '</div>' +
+                '<div style="min-width:0;">' +
+                  '<div style="color:#fff; font-weight:600; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + f.name + '</div>' +
+                  '<div style="color:#9ea4b0; font-size:0.76rem;">' + f.lang + '</div>' +
+                '</div>' +
+              '</div>' +
+              (isSelf ? '<button class="btn-secondary" style="padding:2px 7px; font-size:0.72rem; color:#ff8787;" onclick="removeFriendFromProfile(\'' + f.id + '\')">Удалить</button>' : '') +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
     }
-
     const editPanelHtml = (isSelf && st.editing) ? `
       <div class="lt-prof-card" style="margin-bottom:12px; border-color:rgba(220,38,38,0.45);">
         <div class="lt-prof-card-title">Редактирование профиля и приватности</div>
@@ -347,23 +455,20 @@
           <label><input type="checkbox" id="ltEditShowCity" ${p.showCity ? 'checked' : ''} /> Показывать город и страну</label>
         </div>
         <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-primary" onclick="saveProfileSettings()">Сохранить изменения</button>
+                    <button class="btn-primary" onclick="saveProfileSettings()">Сохранить изменения</button>
           <button class="btn-secondary" onclick="window._ltProfileState.editing=false; render();">Отмена</button>
+          <button class="btn-secondary" onclick="openUserProfile('guest')">Посмотреть профиль глазами гостя</button>
           <button class="btn-secondary" onclick="openModal('accountModal')">Вход / Резервная копия (.json)</button>
         </div>
       </div>
     ` : '';
-
     ws.innerHTML = `
       <div class="lt-profile-shell">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
-          <span style="font-size:0.8rem; color:#9ea4b0;">Личная страница пользователя</span>
-          <div style="display:flex; gap:6px;">
-            <button class="btn-secondary" style="padding:4px 10px; font-size:0.78rem; ${isSelf ? 'border-color:#dc2626; color:#fff;' : ''}" onclick="openUserProfile('self')">Мой вид</button>
-            <button class="btn-secondary" style="padding:4px 10px; font-size:0.78rem; ${!isSelf ? 'border-color:#dc2626; color:#fff;' : ''}" onclick="openUserProfile('guest')">Вид глазами гостя</button>
-          </div>
-        </div>
-
+        ${!isSelf ? `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:8px 12px; background:rgba(14,15,20,0.9); border:1px solid rgba(220,38,38,0.45); gap:8px; flex-wrap:wrap;">
+          <span style="font-size:0.82rem; color:#e5e7eb;">Режим предпросмотра: так ваш профиль видят другие пользователи</span>
+          <button class="btn-primary" style="padding:5px 12px; font-size:0.8rem;" onclick="openUserProfile('self')">Вернуться в мой профиль</button>
+        </div>` : ''}
         <div class="lt-prof-header-box">
           <div class="lt-prof-cover" style="${coverStyle}">
             <div class="lt-prof-cover-badge">LINGVO TRAINER ID</div>
@@ -533,7 +638,7 @@
   const _prevRenderBeforeProfile = window.render;
   window.render = function () {
    if (typeof curTab !== 'undefined' && curTab === 'profile') {
-      document.body.classList.remove('is-home');
+            document.body.classList.add('is-home');
       const ws = document.getElementById('workspace');
       if (ws) {
         window.renderUserProfileView(ws);
