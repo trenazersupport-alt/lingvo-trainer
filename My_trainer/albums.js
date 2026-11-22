@@ -653,6 +653,12 @@
       .slice(0, 4);
 
     const grid = document.querySelector('.lt-prof-photos-grid');
+        const avaBox = document.querySelector('.lt-prof-avatar-box');
+    if (avaBox && isSelf) {
+      avaBox.style.cursor = 'pointer';
+      avaBox.title = 'Нажмите, чтобы загрузить новое фото профиля';
+      avaBox.onclick = function () { window.ltTriggerAvatarUpload(); };
+    }
     if (!grid) return;
 
     const card = grid.closest('.lt-prof-card');
@@ -710,4 +716,65 @@
     ensureHistoryButtons();
   }
 })();
+  /* === АВТОАЛЬБОМ «ФОТОГРАФИИ ПРОФИЛЯ» И СМЕНА АВАТАРА === */
+  window.ltTriggerAvatarUpload = function () {
+    const isSelf = !window._ltProfileState || window._ltProfileState.viewMode === 'self';
+    if (!isSelf) return;
+
+    let inp = document.getElementById('ltDirectAvatarFileInput');
+    if (!inp) {
+      inp = document.createElement('input');
+      inp.type = 'file';
+      inp.id = 'ltDirectAvatarFileInput';
+      inp.accept = 'image/*';
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+
+      inp.addEventListener('change', function () {
+        const file = inp.files && inp.files.length > 0 ? inp.files.item(0) : null;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          compressImageDataUrl(ev.target.result, function (compressedUrl) {
+            window.ltApplyNewProfileAvatar(compressedUrl);
+          });
+        };
+        reader.readAsDataURL(file);
+        inp.value = '';
+      });
+    }
+    inp.click();
+  };
+
+  window.ltApplyNewProfileAvatar = function (imageUrl) {
+    if (!imageUrl) return;
+    // 1. Обновляем текущий аватар в профиле
+    try {
+      const pRaw = localStorage.getItem('lt_user_profile_v1');
+      const p = pRaw ? JSON.parse(pRaw) : {};
+      p.avatar = imageUrl;
+      localStorage.setItem('lt_user_profile_v1', JSON.stringify(p));
+    } catch (e) {}
+
+    // 2. Создаём (если ещё нет) альбом «Фотографии профиля» и добавляем фото в начало ленты
+    const data = loadAlbumsData();
+    let avatarAlbum = data.albums.find(a => a.id === 'alb_avatars');
+    if (!avatarAlbum) {
+      avatarAlbum = { id: 'alb_avatars', title: 'Фотографии профиля', privacy: 'public' };
+      data.albums.unshift(avatarAlbum);
+    }
+
+    data.photos.unshift({
+      id: 'ph_' + Date.now(),
+      albumId: 'alb_avatars',
+      title: 'Фотография профиля',
+      image: imageUrl,
+      color: 'linear-gradient(135deg,#2d1216,#14161f)',
+      hidden: false,
+      createdAt: Date.now()
+    });
+
+    saveAlbumsData(data);
+    if (typeof render === 'function') render();
+  };
 
