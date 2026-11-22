@@ -314,11 +314,21 @@
     saveProfile(p);
     render();
   };
-
   window.scrollToProfileWall = function () {
     window._ltProfileState.activeSubPanel = null;
     const wall = document.querySelector('.lt-prof-col-center');
     if (wall) wall.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+    window.ltOpenLanguageCourse = function (langCode) {
+    if (typeof setLang === 'function') setLang(langCode);
+    const headerLangBtn = document.querySelector('[data-lang="' + langCode + '"], #langBtn_' + langCode);
+    if (headerLangBtn) headerLangBtn.click();
+    if (typeof switchTab === 'function') {
+      switchTab('home');
+    } else {
+      window.curTab = 'home';
+      if (typeof render === 'function') render();
+    }
   };
    window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
@@ -565,23 +575,24 @@
           }).join('') +
         '</div>' +
       '</div>';
-    } else if (st.activeSubPanel === 'langs') {
+       } else if (st.activeSubPanel === 'langs') {
+      const curLangCode = (typeof curLang !== 'undefined' && curLang) ? curLang : 'ko';
       subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
         '<div class="lt-prof-card-title"><span>Изучаемые языки и прогресс</span>' +
           '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'langs\')">Закрыть</button>' +
         '</div>' +
         '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">' +
-          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; display:flex; justify-content:space-between; align-items:center;">' +
+          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid ' + (curLangCode === 'ko' ? '#dc2626' : 'rgba(255,255,255,0.2)') + '; display:flex; justify-content:space-between; align-items:center;">' +
             '<div><div style="color:#fff; font-weight:700; font-size:0.9rem;">Корейский язык (KO)</div><div style="color:#9ea4b0; font-size:0.78rem;">Основной курс • Уровень A2–B1</div></div>' +
-            '<button class="btn-primary" style="padding:5px 10px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'ko\'); switchTab(\'cards\');">Открыть</button>' +
+            '<button class="' + (curLangCode === 'ko' ? 'btn-primary' : 'btn-secondary') + '" style="padding:5px 10px; font-size:0.78rem;" onclick="ltOpenLanguageCourse(\'ko\')">Открыть</button>' +
           '</div>' +
-          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; display:flex; justify-content:space-between; align-items:center;">' +
+          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid ' + (curLangCode === 'en' ? '#dc2626' : 'rgba(255,255,255,0.2)') + '; display:flex; justify-content:space-between; align-items:center;">' +
             '<div><div style="color:#fff; font-weight:700; font-size:0.9rem;">Английский язык (EN)</div><div style="color:#9ea4b0; font-size:0.78rem;">Дополнительный курс • Уровень B2</div></div>' +
-            '<button class="btn-secondary" style="padding:5px 10px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'en\'); switchTab(\'cards\');">Открыть</button>' +
+            '<button class="' + (curLangCode === 'en' ? 'btn-primary' : 'btn-secondary') + '" style="padding:5px 10px; font-size:0.78rem;" onclick="ltOpenLanguageCourse(\'en\')">Открыть</button>' +
           '</div>' +
         '</div>' +
       '</div>';
-      }
+    }
     const editPanelHtml = (isSelf && st.editing) ? `
       <div class="lt-prof-card" style="margin-bottom:12px; border-color:rgba(220,38,38,0.45);">
         <div class="lt-prof-card-title">Редактирование профиля и приватности</div>
