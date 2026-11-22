@@ -410,3 +410,187 @@
     return res;
   };
 })();
+/* === СТРАНИЦЫ: «ВОЗМОЖНЫЕ ДРУЗЬЯ» И «СООБЩЕСТВА ПО ИНТЕРЕСАМ» === */
+(function () {
+  const COMM_KEY = 'lt_user_communities_v1';
+
+  function getCommunitiesData() {
+    try {
+      const r = localStorage.getItem(COMM_KEY);
+      if (r) return JSON.parse(r);
+    } catch (e) {}
+    return [
+      { id: 'c_topik', title: 'Подготовка к TOPIK I–II', tag: 'Экзамены', members: 1420, joined: true, desc: 'Разбор пробных вариантов, лексика 1–6 гыпа и еженедельные мини-тесты.' },
+      { id: 'c_hanja', title: 'Корни слов и Ханча', tag: 'Лексика', members: 860, joined: true, desc: 'Изучаем китайско-корейские корни для быстрого запоминания десятков однокоренных слов.' },
+      { id: 'c_speaking', title: 'Разговорный клуб KO / EN', tag: 'Практика', members: 2190, joined: true, desc: 'Поиск напарников для голосовых созвонов, переписки и языкового обмена.' },
+      { id: 'c_dorama', title: 'Аудирование по дорамам и подкастам', tag: 'Аудирование', members: 1745, joined: false, desc: 'Разбор живой разговорной речи, сленга и устойчивых фраз из корейских сериалов.' },
+      { id: 'c_en_c1', title: 'English Speaking & Idioms B2–C1', tag: 'Английский', members: 1310, joined: false, desc: 'Ежедневная практика продвинутой лексики, фразовых глаголов и дебатов.' },
+      { id: 'c_grammar', title: 'Грамматика корейского с нуля', tag: 'Грамматика', members: 2540, joined: false, desc: 'Понятные схемы частиц, окончаний и вежливых стилей речи для начинающих.' }
+    ];
+  }
+
+  function saveCommunitiesData(list) {
+    try { localStorage.setItem(COMM_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  window._ltHubState = {
+    sugFilter: 'all', // 'all' | 'native'
+    sugQuery: '',
+    commFilter: 'all', // 'all' | 'mine'
+    creatingComm: false
+  };
+
+  window.openSuggestedFriendsPage = function () {
+    window._ltHubState.sugFilter = 'all';
+    window._ltHubState.sugQuery = '';
+    if (typeof switchTab === 'function') switchTab('suggested_friends');
+    else { window.curTab = 'suggested_friends'; if (typeof render === 'function') render(); }
+  };
+
+  window.openCommunitiesPage = function (filter) {
+    window._ltHubState.commFilter = filter || 'all';
+    window._ltHubState.creatingComm = false;
+    if (typeof switchTab === 'function') switchTab('communities_hub');
+    else { window.curTab = 'communities_hub'; if (typeof render === 'function') render(); }
+  };
+
+  window.ltToggleCommunityMembership = function (commId) {
+    const list = getCommunitiesData();
+    const item = list.find(function (c) { return c.id === commId; });
+    if (!item) return;
+    item.joined = !item.joined;
+    item.members += item.joined ? 1 : -1;
+    saveCommunitiesData(list);
+
+    // Синхронизируем список сообществ в профиле
+    try {
+      const pRaw = localStorage.getItem('lt_user_profile_v1');
+      if (pRaw) {
+        const p = JSON.parse(pRaw);
+        p.communities = list.filter(function (c) { return c.joined; }).map(function (c) {
+          return { id: c.id, title: c.title, members: c.members + ' участников' };
+        });
+        localStorage.setItem('lt_user_profile_v1', JSON.stringify(p));
+      }
+    } catch (e) {}
+
+    if (typeof render === 'function') render();
+  };
+
+  window.ltCreateCommunityItem = function () {
+    const tInp = document.getElementById('ltNewCommTitle');
+    const tagInp = document.getElementById('ltNewCommTag');
+    const dInp = document.getElementById('ltNewCommDesc');
+    if (!tInp || !tInp.value.trim()) return;
+    const list = getCommunitiesData();
+    list.unshift({
+      id: 'c_' + Date.now(),
+      title: tInp.value.trim(),
+      tag: (tagInp && tagInp.value.trim()) ? tagInp.value.trim() : 'Клуб',
+      members: 1,
+      joined: true,
+      desc: (dInp && dInp.value.trim()) ? dInp.value.trim() : 'Новое учебное сообщество на платформе Lingvo Trainer.'
+    });
+    saveCommunitiesData(list);
+    window._ltHubState.creatingComm = false;
+    if (typeof render === 'function') render();
+  };
+
+  window.renderSuggestedFriendsPage = function (ws) {
+    const st = window._ltHubState;
+    let pool = [];
+    try {
+      const p = JSON.parse(localStorage.getItem('lt_user_profile_v1') || '{}');
+      const s = JSON.parse(localStorage.getItem('lt_social_lists_v1') || '{}');
+      pool = (Array.isArray(p.suggestedFriends) ? p.suggestedFriends : []).concat(Array.isArray(s.extraSuggested) ? s.extraSuggested : []);
+    } catch (e) {}
+
+    const q = (st.sugQuery || '').toLowerCase().trim();
+    const filtered = pool.filter(function (u) {
+      if (st.sugFilter === 'native' && !(u.lang || '').toLowerCase().includes('носитель')) return false;
+      if (q && !(u.name || '').toLowerCase().includes(q) && !(u.handle || '').toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    ws.innerHTML =
+      '<div class="lt-soc-shell">' +
+        '<div class="lt-soc-topbar">' +
+          '<div class="lt-soc-tabs">' +
+            '<button class="lt-soc-tab ' + (st.sugFilter === 'all' ? 'is-active' : '') + '" onclick="window._ltHubState.sugFilter=\'all\'; render();">Возможные друзья (' + pool.length + ')</button>' +
+            '<button class="lt-soc-tab ' + (st.sugFilter === 'native' ? 'is-active' : '') + '" onclick="window._ltHubState.sugFilter=\'native\'; render();">Носители языка</button>' +
+          '</div>' +
+          '<button class="lt-soc-close-btn" onclick="openUserProfile(\'self\')" title="Закрыть и вернуться в профиль">✕</button>' +
+        '</div>' +
+
+        '<div style="margin-bottom:14px;">' +
+          '<input class="input-dark" placeholder="Поиск участников по имени или @нику..." value="' + (st.sugQuery || '') + '" oninput="window._ltHubState.sugQuery=this.value; render();" />' +
+        '</div>' +
+
+        (filtered.length ? (
+          '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr)); gap:12px;">' +
+            filtered.map(function (u) {
+              return '<div style="padding:12px 14px; background:rgba(10,11,15,0.82); border:1px solid rgba(255,255,255,0.14); display:flex; justify-content:space-between; align-items:center; gap:10px;">' +
+                '<div style="display:flex; align-items:center; gap:10px; min-width:0;">' +
+                  '<div class="lt-mini-ava" style="margin:0;">' + u.name.at(0) + '</div>' +
+                  '<div style="min-width:0;">' +
+                    '<div style="color:#fff; font-weight:700; font-size:0.92rem;">' + u.name + '</div>' +
+                    '<div style="color:#f87171; font-size:0.76rem;">' + (u.handle || '') + '</div>' +
+                    '<div style="color:#9ea4b0; font-size:0.78rem; margin-top:2px;">' + (u.lang || '') + '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<button class="btn-primary" style="padding:5px 11px; font-size:0.78rem;" onclick="ltSocialAddSuggested(\'' + u.id + '\')">+ Добавить</button>' +
+              '</div>';
+            }).join('') +
+          '</div>'
+        ) : '<div style="padding:24px; text-align:center; color:#9ea4b0; font-size:0.88rem;">Новых рекомендаций по выбранному фильтру пока нет.</div>') +
+      '</div>';
+  };
+
+  window.renderCommunitiesPage = function (ws) {
+    const st = window._ltHubState;
+    const list = getCommunitiesData();
+    const myCount = list.filter(function (c) { return c.joined; }).length;
+    const shown = list.filter(function (c) { return st.commFilter === 'all' || c.joined; });
+
+    ws.innerHTML =
+      '<div class="lt-soc-shell">' +
+        '<div class="lt-soc-topbar">' +
+          '<div class="lt-soc-tabs">' +
+            '<button class="lt-soc-tab ' + (st.commFilter === 'all' ? 'is-active' : '') + '" onclick="window._ltHubState.commFilter=\'all\'; render();">Все сообщества (' + list.length + ')</button>' +
+            '<button class="lt-soc-tab ' + (st.commFilter === 'mine' ? 'is-active' : '') + '" onclick="window._ltHubState.commFilter=\'mine\'; render();">Мои подписки (' + myCount + ')</button>' +
+            '<button class="btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="window._ltHubState.creatingComm = !window._ltHubState.creatingComm; render();">+ Создать сообщество</button>' +
+          '</div>' +
+          '<button class="lt-soc-close-btn" onclick="openUserProfile(\'self\')" title="Закрыть и вернуться в профиль">✕</button>' +
+        '</div>' +
+
+        (st.creatingComm ? (
+          '<div style="padding:12px 14px; background:rgba(10,11,15,0.85); border:1px solid rgba(220,38,38,0.45); margin-bottom:14px; display:flex; gap:8px; flex-wrap:wrap;">' +
+            '<input id="ltNewCommTitle" class="input-dark" placeholder="Название сообщества" style="flex:1; min-width:180px;" />' +
+            '<input id="ltNewCommTag" class="input-dark" placeholder="Тематика (например: TOPIK)" style="width:180px;" />' +
+            '<input id="ltNewCommDesc" class="input-dark" placeholder="Краткое описание клуба..." style="flex:2; min-width:220px;" />' +
+            '<button class="btn-primary" onclick="ltCreateCommunityItem()">Создать</button>' +
+          '</div>'
+        ) : '') +
+
+        '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:12px;">' +
+          shown.map(function (c) {
+            return '<div style="padding:14px 16px; background:rgba(10,11,15,0.82); border:1px solid rgba(255,255,255,0.14); border-left:2px solid #dc2626; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">' +
+              '<div>' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
+                  '<span style="color:#fff; font-weight:700; font-size:0.98rem;">' + c.title + '</span>' +
+                  '<span class="tag" style="font-size:0.7rem; padding:2px 6px;">' + c.tag + '</span>' +
+                '</div>' +
+                '<div style="color:#b8bec9; font-size:0.83rem; line-height:1.45;">' + c.desc + '</div>' +
+              '</div>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">' +
+                '<span style="color:#9ea4b0; font-size:0.78rem;">' + c.members + ' участников</span>' +
+                '<button class="' + (c.joined ? 'btn-secondary' : 'btn-primary') + '" style="padding:4px 11px; font-size:0.78rem;" onclick="ltToggleCommunityMembership(\'' + c.id + '\')">' +
+                  (c.joined ? 'Вы участник ✓' : 'Вступить') +
+                '</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+  };
+})();
