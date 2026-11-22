@@ -1109,7 +1109,8 @@ try { const r = localStorage.getItem('lt_user_albums_v1'); if (r) data = JSON.pa
     const stickers = ['잘했어요! (Отлично!)', '화이팅! (Удачи!)', '감사합니다 (Спасибо)', '멋져요! (Круто!)', '공부 중 (Учу слова)'];
 
     overlay.innerHTML =
-      '<div class="lt-pv-stage-wrap" onclick="event.stopPropagation();">' +
+           '<div class="lt-pv-stage-wrap" onclick="event.stopPropagation();">' +
+        '<button class="lt-pv-close-outer" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove();" title="Закрыть">✕</button>' +
         '<button class="lt-pv-side-arrow" ' + (st.list.length <= 1 ? 'disabled' : '') + ' onclick="ltViewerStep(-1)" title="Предыдущее фото">«</button>' +
 
         '<div class="lt-pv-window">' +
@@ -1124,12 +1125,10 @@ try { const r = localStorage.getItem('lt_user_albums_v1'); if (r) data = JSON.pa
                 '<div style="font-weight:700; color:#fff; font-size:0.98rem;">' + authorName + '</div>' +
                 '<div style="font-size:0.75rem; color:#9ea4b0;">Фото ' + (st.idx + 1) + ' из ' + st.list.length + '</div>' +
               '</div>' +
-              '<div style="display:flex; align-items:center; gap:6px;">' +
+              '<div>' +
                 (isSelf ? '<button class="lt-pv-mini-btn" title="Включить или отключить комментарии" onclick="ltViewerToggleComments()">' + (commentsOn ? 'Комм: вкл' : 'Комм: выкл') + '</button>' : '') +
-                '<button class="lt-pv-mini-btn" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove();">✕</button>' +
               '</div>' +
             '</div>' +
-
             descBlockHtml +
 
             '<div class="lt-pv-comments-list">' +
