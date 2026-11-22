@@ -288,28 +288,39 @@
   /* === СВОДНАЯ СТРАНИЦА ИЗУЧЕННЫХ СЛОВ (КОРЕЙСКИЙ + АНГЛИЙСКИЙ) === */
   window.renderLearnedSummaryView = function (ws) {
     const st = window._ltSocialState;
-    let allLearned = [];
+        let allLearned = [];
+    const learnedSet = new Set();
+    try {
+      if (typeof learnedIds !== 'undefined' && Array.isArray(learnedIds)) {
+        learnedIds.forEach(function (id) { learnedSet.add(String(id)); });
+      }
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.toLowerCase().includes('learned')) {
+          const parsed = JSON.parse(localStorage.getItem(k) || '[]');
+          if (Array.isArray(parsed)) parsed.forEach(function (id) { learnedSet.add(String(id)); });
+        }
+      });
+    } catch (e) {}
 
     try {
-      if (typeof learnedIds !== 'undefined' && Array.isArray(learnedIds) && typeof WORDS_DB !== 'undefined') {
-        Object.keys(WORDS_DB).forEach(function (langKey) {
-          const cats = WORDS_DB[langKey] || {};
-          Object.keys(cats).forEach(function (catName) {
-            (cats[catName] || []).forEach(function (w) {
-              if (learnedIds.includes(w.id)) {
-                allLearned.push({
-                  id: w.id,
-                  lang: langKey,
-                  category: catName,
-                  word: w.word,
-                  translit: w.translit || '',
-                  meaning: w.meaning
-                });
-              }
-            });
-          });
-        });
+      let pool = [];
+      if (typeof getAllWords === 'function') {
+        pool = getAllWords();
+      } else if (typeof WORDS !== 'undefined' && Array.isArray(WORDS)) {
+        pool = WORDS;
       }
+      pool.forEach(function (w) {
+        if (w && learnedSet.has(String(w.id))) {
+          const langCode = w.lang || (/[가-힣]/.test(w.word || '') ? 'ko' : 'en');
+          allLearned.push({
+            id: w.id,
+            lang: langCode,
+            word: w.word,
+            translit: w.translit || w.roman || '',
+            meaning: w.meaning || w.translation || ''
+          });
+        }
+      });
     } catch (e) {}
 
     const koCount = allLearned.filter(function (x) { return x.lang === 'ko'; }).length;
