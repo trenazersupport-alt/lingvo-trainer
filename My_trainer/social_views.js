@@ -365,17 +365,32 @@
       '</div>';
   };
 
-  /* === ПОДКЛЮЧЕНИЕ В RENDER И ПРИВЯЗКА СЧЁТЧИКОВ ПРОФИЛЯ === */
+   /* === ПОДКЛЮЧЕНИЕ В RENDER И ПРИВЯЗКА СЧЁТЧИКОВ ПРОФИЛЯ === */
   function syncProfileSocialLinks() {
     if (typeof curTab === 'undefined' || curTab !== 'profile') return;
 
-    const cards = document.querySelectorAll('.lt-prof-col-left .lt-prof-card');
-    cards.forEach(function (card) {
+    const leftCards = document.querySelectorAll('.lt-prof-col-left .lt-prof-card');
+    leftCards.forEach(function (card) {
       const title = card.querySelector('.lt-prof-card-title');
       if (title && title.textContent.trim().startsWith('Друзья')) {
         title.style.cursor = 'pointer';
         title.title = 'Открыть страницу друзей';
         title.onclick = function () { window.openSocialListPage('friends', 'all'); };
+      }
+    });
+
+    const rightCards = document.querySelectorAll('.lt-prof-col-right .lt-prof-card');
+    rightCards.forEach(function (card) {
+      const title = card.querySelector('.lt-prof-card-title');
+      if (!title) return;
+      if (title.textContent.trim().startsWith('Возможные друзья')) {
+        title.style.cursor = 'pointer';
+        title.title = 'Открыть все рекомендации друзей';
+        title.onclick = function () { window.openSuggestedFriendsPage(); };
+      } else if (title.textContent.trim().startsWith('Сообщества')) {
+        title.style.cursor = 'pointer';
+        title.title = 'Открыть каталог сообществ';
+        title.onclick = function () { window.openCommunitiesPage('all'); };
       }
     });
 
@@ -392,18 +407,22 @@
     if (typeof curTab !== 'undefined' && curTab === 'social_list') {
       document.body.classList.add('is-home');
       const ws = document.getElementById('workspace');
-      if (ws) {
-        window.renderSocialListView(ws);
-        return;
-      }
+      if (ws) { window.renderSocialListView(ws); return; }
     }
     if (typeof curTab !== 'undefined' && curTab === 'learned_summary') {
       document.body.classList.add('is-home');
       const ws = document.getElementById('workspace');
-      if (ws) {
-        window.renderLearnedSummaryView(ws);
-        return;
-      }
+      if (ws) { window.renderLearnedSummaryView(ws); return; }
+    }
+    if (typeof curTab !== 'undefined' && curTab === 'suggested_friends') {
+      document.body.classList.add('is-home');
+      const ws = document.getElementById('workspace');
+      if (ws) { window.renderSuggestedFriendsPage(ws); return; }
+    }
+    if (typeof curTab !== 'undefined' && curTab === 'communities_hub') {
+      document.body.classList.add('is-home');
+      const ws = document.getElementById('workspace');
+      if (ws) { window.renderCommunitiesPage(ws); return; }
     }
     const res = typeof _prevRenderBeforeSocial === 'function' ? _prevRenderBeforeSocial() : undefined;
     syncProfileSocialLinks();
