@@ -567,6 +567,7 @@
       return '<div class="lt-alb-photo-item ' + extraClass + (ph.hidden ? ' is-hidden' : '') + '"' +
         ' style="' + bgStyle + '"' +
         ' oncontextmenu="openPhotoContextMenu(event, \'' + ph.id + '\')"' +
+             ' onclick="ltOpenPhotoViewerById(\'' + ph.id + '\', window._ltAlbumsState.selectedAlbumId)"' +
         ' title="Правый клик — меню действий">' +
         '<div class="lt-alb-photo-caption">' +
           '<span>' + ph.title + '</span>' +
@@ -777,7 +778,8 @@
     } catch (e) {}
 
     // 2. Создаём (если ещё нет) альбом «Фотографии профиля» и добавляем фото в начало ленты
-    const data = loadAlbumsData();
+    let data = { albums: [], photos: [] };
+try { const r = localStorage.getItem('lt_user_albums_v1'); if (r) data = JSON.parse(r); } catch (e) {}
     let avatarAlbum = data.albums.find(a => a.id === 'alb_avatars');
     if (!avatarAlbum) {
       avatarAlbum = { id: 'alb_avatars', title: 'Фотографии профиля', privacy: 'public' };
@@ -793,8 +795,366 @@
       hidden: false,
       createdAt: Date.now()
     });
-
-    saveAlbumsData(data);
+    try { localStorage.setItem('lt_user_albums_v1', JSON.stringify(data)); } catch (e) {}
     if (typeof render === 'function') render();
   };
+/* === ЕДИНЫЙ ПРОСМОТРЩИК ФОТОГРАФИЙ ПО МАКЕТУ === */
+(function () {
+  const ALB_KEY = 'lt_user_albums_v1';
+  const PROF_KEY = 'lt_user_profile_v1';
+
+  function getAlbumsSafe() {
+    try {
+      const raw = localStorage.getItem(ALB_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (Array.isArray(p.albums) && Array.isArray(p.photos)) return p;
+      }
+    } catch (e) {}
+    return { albums: [], photos: [] };
+  }
+
+  function setAlbumsSafe(data) {
+    try { localStorage.setItem(ALB_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  function getAuthorNick() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PROF_KEY) || '{}');
+      if (p.nick) return p.nick;
+    } catch (e) {}
+    return 'ekstshafor';
+  }
+
+  window._ltPhotoModalState = {
+    list: [],
+    idx: 0,
+    editingDesc: false,
+    descMenuOpen: false,
+    stickerPickerOpen: false
+  };
+
+  window.ltOpenPhotoViewerById = function (photoId, albumFilter) {
+    const isSelf = !window._ltProfileState || window._ltProfileState.viewMode === 'self';
+    const data = getAlbumsSafe();
+    const list = data.photos
+      .filter(function (ph) {
+        if (!isSelf && ph.hidden) return false;
+        if (albumFilter && albumFilter !== 'all' && ph.albumId !== albumFilter) return false;
+        return true;
+      })
+      .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+    if (!list.length) return;
+    let foundIdx = list.findIndex(function (x) { return x.id === photoId; });
+    if (foundIdx < 0) foundIdx = 0;
+
+    window._ltPhotoModalState.list = list;
+    window._ltPhotoModalState.idx = foundIdx;
+    window._ltPhotoModalState.editingDesc = false;
+    window._ltPhotoModalState.descMenuOpen = false;
+    window._ltPhotoModalState.stickerPickerOpen = false;
+    renderPhotoViewerModal();
+  };
+
+  window.ltOpenAvatarViewer = function (startIdx) {
+    const data = getAlbumsSafe();
+    const firstAva = data.photos.find(function (x) { return x.albumId === 'alb_avatars'; });
+    if (firstAva) {
+      window.ltOpenPhotoViewerById(firstAva.id, 'alb_avatars');
+      return;
+    }
+    let curAvatar = '';
+    try { curAvatar = JSON.parse(localStorage.getItem(PROF_KEY) || '{}').avatar || ''; } catch (e) {}
+    if (!curAvatar) {
+      alert('В альбоме «Фотографии профиля» пока нет загруженных фотографий.');
+      return;
+    }
+    window._ltPhotoModalState.list = [{ id: 'cur_ava', albumId: 'alb_avatars', title: 'Фотография профиля', image: curAvatar, commentsEnabled: true, comments: [] }];
+    window._ltPhotoModalState.idx = startIdx || 0;
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerStep = function (delta) {
+    const st = window._ltPhotoModalState;
+    if (!st.list.length) return;
+    st.idx = (st.idx + delta + st.list.length) % st.list.length;
+    st.editingDesc = false;
+    st.descMenuOpen = false;
+    st.stickerPickerOpen = false;
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerSaveDesc = function () {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    const inp = document.getElementById('ltViewerDescTextarea');
+    if (!cur || !inp) return;
+    const data = getAlbumsSafe();
+    const real = data.photos.find(function (x) { return x.id === cur.id; });
+    if (real) {
+      real.description = inp.value.trim();
+      cur.description = real.description;
+      setAlbumsSafe(data);
+    }
+    st.editingDesc = false;
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerDeleteDesc = function () {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    if (!cur) return;
+    const data = getAlbumsSafe();
+    const real = data.photos.find(function (x) { return x.id === cur.id; });
+    if (real) {
+      real.description = '';
+      cur.description = '';
+      setAlbumsSafe(data);
+    }
+    st.descMenuOpen = false;
+    st.editingDesc = false;
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerToggleComments = function () {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    if (!cur) return;
+    const data = getAlbumsSafe();
+    const real = data.photos.find(function (x) { return x.id === cur.id; });
+    if (real) {
+      real.commentsEnabled = real.commentsEnabled === false ? true : false;
+      cur.commentsEnabled = real.commentsEnabled;
+      setAlbumsSafe(data);
+    }
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerAddComment = function (stickerText) {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    const inp = document.getElementById('ltViewerCommentInput');
+    const text = stickerText || (inp ? inp.value.trim() : '');
+    if (!cur || !text) return;
+
+    const now = new Date();
+    const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    const newComment = {
+      id: 'c_' + Date.now(),
+      author: getAuthorNick(),
+      time: 'Сегодня в ' + timeStr,
+      text: text
+    };
+
+    const data = getAlbumsSafe();
+    const real = data.photos.find(function (x) { return x.id === cur.id; });
+    if (real) {
+      if (!Array.isArray(real.comments)) real.comments = [];
+      real.comments.push(newComment);
+      cur.comments = real.comments;
+      setAlbumsSafe(data);
+    } else {
+      if (!Array.isArray(cur.comments)) cur.comments = [];
+      cur.comments.push(newComment);
+    }
+    st.stickerPickerOpen = false;
+    renderPhotoViewerModal();
+  };
+
+  window.ltViewerDeleteComment = function (commentId) {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    if (!cur) return;
+    const data = getAlbumsSafe();
+    const real = data.photos.find(function (x) { return x.id === cur.id; });
+    if (real && Array.isArray(real.comments)) {
+      real.comments = real.comments.filter(function (c) { return c.id !== commentId; });
+      cur.comments = real.comments;
+      setAlbumsSafe(data);
+    }
+    renderPhotoViewerModal();
+  };
+  window.ltViewerSetMainAvatar = function (photoId) {
+    const data = getAlbumsSafe();
+    const ph = data.photos.find(function (x) { return x.id === photoId; });
+    if (!ph || !ph.image) return;
+    try {
+      const pRaw = localStorage.getItem(PROF_KEY);
+      const p = pRaw ? JSON.parse(pRaw) : {};
+      p.avatar = ph.image;
+      localStorage.setItem(PROF_KEY, JSON.stringify(p));
+    } catch (e) {}
+    const m = document.getElementById('ltPhotoViewerOverlay');
+    if (m) m.remove();
+    if (typeof render === 'function') render();
+  };
+
+  window.ltViewerDeleteCurrentPhoto = function (photoId) {
+    const data = getAlbumsSafe();
+    data.photos = data.photos.filter(function (x) { return x.id !== photoId; });
+    setAlbumsSafe(data);
+    const st = window._ltPhotoModalState;
+    st.list = st.list.filter(function (x) { return x.id !== photoId; });
+    if (!st.list.length) {
+      const m = document.getElementById('ltPhotoViewerOverlay');
+      if (m) m.remove();
+      if (typeof render === 'function') render();
+      return;
+    }
+    if (st.idx >= st.list.length) st.idx = 0;
+    renderPhotoViewerModal();
+    if (typeof render === 'function') render();
+  };
+
+  window.renderPhotoViewerModal = function () {
+    const st = window._ltPhotoModalState;
+    const cur = st.list.at(st.idx);
+    if (!cur) return;
+
+    const isSelf = !window._ltProfileState || window._ltProfileState.viewMode === 'self';
+    const isAvatarAlbum = cur.albumId === 'alb_avatars';
+    const authorName = getAuthorNick();
+    const commentsOn = cur.commentsEnabled !== false;
+    const comments = Array.isArray(cur.comments) ? cur.comments : [];
+
+    let overlay = document.getElementById('ltPhotoViewerOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'ltPhotoViewerOverlay';
+      overlay.className = 'lt-pv-overlay';
+      overlay.onclick = function () { overlay.remove(); };
+      document.body.appendChild(overlay);
+    }
+
+    const mediaHtml = cur.image
+      ? '<img src="' + cur.image + '" alt="' + (cur.title || 'Фото') + '" />'
+      : '<div class="lt-pv-color-stub" style="background:' + (cur.color || '#181a24') + ';">' + (cur.title || '') + '</div>';
+
+    // Кнопки под фотографией (зелёный контур по макету)
+    let bottomBtnsHtml = '';
+    if (isSelf) {
+      bottomBtnsHtml =
+        (isAvatarAlbum && cur.image
+          ? '<button class="lt-pv-under-btn" onclick="ltViewerSetMainAvatar(\'' + cur.id + '\')">Сделать фото профиля</button>'
+          : '') +
+        '<button class="lt-pv-under-btn" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove(); ltPhotoAction(\'share\', \'' + cur.id + '\');">Поделиться</button>' +
+        '<button class="lt-pv-under-btn is-danger" onclick="ltViewerDeleteCurrentPhoto(\'' + cur.id + '\')">Удалить</button>';
+    } else {
+      bottomBtnsHtml =
+        '<button class="lt-pv-under-btn" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove(); ltPhotoAction(\'share\', \'' + cur.id + '\');">Поделиться</button>' +
+        '<button class="lt-pv-under-btn is-danger" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove(); ltPhotoAction(\'report\', \'' + cur.id + '\');">Пожаловаться</button>';
+    }
+
+    // Блок описания (для всех фото, кроме альбома «Фотографии профиля»)
+    let descBlockHtml = '';
+    if (!isAvatarAlbum) {
+      const descText = cur.description || '';
+      descBlockHtml =
+        '<div class="lt-pv-desc-box">' +
+          '<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">' +
+            '<div style="font-size:0.84rem; color:' + (descText ? '#e5e7eb' : '#9ea4b0') + '; line-height:1.45; flex:1;">' +
+              (descText || (isSelf ? 'Нет описания фотографии' : '')) +
+            '</div>' +
+            (isSelf ? (
+              '<div style="position:relative;">' +
+                '<button class="lt-pv-mini-btn" title="Действия с описанием" onclick="window._ltPhotoModalState.descMenuOpen = !window._ltPhotoModalState.descMenuOpen; renderPhotoViewerModal();">▾</button>' +
+                (st.descMenuOpen ? (
+                  '<div class="lt-prof-dropdown-menu open" style="min-width:155px;">' +
+                    '<button onclick="window._ltPhotoModalState.editingDesc=true; window._ltPhotoModalState.descMenuOpen=false; renderPhotoViewerModal();">Редактировать</button>' +
+                    '<button style="color:#ff8787;" onclick="ltViewerDeleteDesc()">Удалить</button>' +
+                  '</div>'
+                ) : '') +
+              '</div>'
+            ) : '') +
+          '</div>' +
+          (st.editingDesc ? (
+            '<div style="margin-top:8px;">' +
+              '<textarea id="ltViewerDescTextarea" class="textarea-dark" rows="2" placeholder="Введите описание фотографии...">' + descText + '</textarea>' +
+              '<div style="display:flex; gap:6px; margin-top:6px;">' +
+                '<button class="btn-primary" style="padding:4px 10px; font-size:0.78rem;" onclick="ltViewerSaveDesc()">Сохранить</button>' +
+                '<button class="btn-secondary" style="padding:4px 10px; font-size:0.78rem;" onclick="window._ltPhotoModalState.editingDesc=false; renderPhotoViewerModal();">Отмена</button>' +
+              '</div>' +
+            '</div>'
+          ) : '') +
+        '</div>';
+    }
+
+    const stickers = ['잘했어요! (Отлично!)', '화이팅! (Удачи!)', '감사합니다 (Спасибо)', '멋져요! (Круто!)', '공부 중 (Учу слова)'];
+
+    overlay.innerHTML =
+      '<div class="lt-pv-stage-wrap" onclick="event.stopPropagation();">' +
+        '<button class="lt-pv-side-arrow" ' + (st.list.length <= 1 ? 'disabled' : '') + ' onclick="ltViewerStep(-1)" title="Предыдущее фото">«</button>' +
+
+        '<div class="lt-pv-window">' +
+          '<div class="lt-pv-left">' +
+            '<div class="lt-pv-media">' + mediaHtml + '</div>' +
+            '<div class="lt-pv-under-bar">' + bottomBtnsHtml + '</div>' +
+          '</div>' +
+
+          '<div class="lt-pv-right">' +
+            '<div class="lt-pv-header">' +
+              '<div>' +
+                '<div style="font-weight:700; color:#fff; font-size:0.98rem;">' + authorName + '</div>' +
+                '<div style="font-size:0.75rem; color:#9ea4b0;">Фото ' + (st.idx + 1) + ' из ' + st.list.length + '</div>' +
+              '</div>' +
+              '<div style="display:flex; align-items:center; gap:6px;">' +
+                (isSelf ? '<button class="lt-pv-mini-btn" title="Включить или отключить комментарии" onclick="ltViewerToggleComments()">' + (commentsOn ? 'Комм: вкл' : 'Комм: выкл') + '</button>' : '') +
+                '<button class="lt-pv-mini-btn" onclick="document.getElementById(\'ltPhotoViewerOverlay\').remove();">✕</button>' +
+              '</div>' +
+            '</div>' +
+
+            descBlockHtml +
+
+            '<div class="lt-pv-comments-list">' +
+              (!commentsOn
+                ? '<div style="color:#9ea4b0; font-size:0.82rem; text-align:center; margin-top:20px;">Автор отключил комментарии к этой фотографии.</div>'
+                : (comments.length
+                    ? comments.map(function (c) {
+                        return '<div class="lt-pv-comment-item">' +
+                          '<div style="display:flex; justify-content:space-between; align-items:center; gap:6px;">' +
+                            '<span style="font-weight:600; color:#fff; font-size:0.82rem;">' + c.author + '</span>' +
+                            '<span style="font-size:0.7rem; color:#9ea4b0;">' + c.time +
+                              (isSelf ? ' <span style="color:#ff8787; cursor:pointer; margin-left:4px;" onclick="ltViewerDeleteComment(\'' + c.id + '\')">✕</span>' : '') +
+                            '</span>' +
+                          '</div>' +
+                          '<div style="color:#e5e7eb; font-size:0.84rem; margin-top:3px; line-height:1.4;">' + c.text + '</div>' +
+                        '</div>';
+                      }).join('')
+                    : '<div style="color:#9ea4b0; font-size:0.82rem; text-align:center; margin-top:20px;">Комментариев пока нет.</div>')) +
+            '</div>' +
+
+            (commentsOn ? (
+              '<div class="lt-pv-composer">' +
+                (st.stickerPickerOpen ? (
+                  '<div class="lt-pv-sticker-bar">' +
+                    stickers.map(function (s) {
+                      return '<button class="btn-secondary" style="padding:3px 7px; font-size:0.74rem;" onclick="ltViewerAddComment(\'' + s + '\')">' + s + '</button>';
+                    }).join('') +
+                  '</div>'
+                ) : '') +
+                '<div class="lt-pv-composer-row">' +
+                  '<textarea id="ltViewerCommentInput" class="textarea-dark" rows="2" placeholder="Написать комментарий..." onkeydown="if(event.key===\'Enter\' && !event.shiftKey){ event.preventDefault(); ltViewerAddComment(); }"></textarea>' +
+                  '<div class="lt-pv-composer-btns">' +
+                    '<button class="btn-primary" style="padding:5px 9px; font-size:0.78rem;" title="Отправить комментарий" onclick="ltViewerAddComment()">➤</button>' +
+                    '<button class="btn-secondary" style="padding:5px 9px; font-size:0.78rem;" title="Быстрые стикеры / фразы" onclick="window._ltPhotoModalState.stickerPickerOpen = !window._ltPhotoModalState.stickerPickerOpen; renderPhotoViewerModal();">+</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>'
+            ) : '') +
+          '</div>' +
+        '</div>' +
+
+        '<button class="lt-pv-side-arrow" ' + (st.list.length <= 1 ? 'disabled' : '') + ' onclick="ltViewerStep(1)" title="Следующее фото">»</button>' +
+      '</div>';
+  };
+
+  document.addEventListener('keydown', function (e) {
+    const ov = document.getElementById('ltPhotoViewerOverlay');
+    if (!ov) return;
+    if (e.key === 'Escape') ov.remove();
+    if (e.key === 'ArrowLeft') window.ltViewerStep(-1);
+    if (e.key === 'ArrowRight') window.ltViewerStep(1);
+  });
+})();
 
