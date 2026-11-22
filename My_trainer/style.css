@@ -1863,4 +1863,195 @@ body.drawer-is-open:not(.is-home) .workspace {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* === КНОПКИ ИСТОРИИ « » И СТРАНИЦА АЛЬБОМОВ === */
+.lt-hist-nav-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.lt-hist-btn {
+  background: rgba(14, 15, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e5e7eb;
+  padding: 2px 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lt-hist-btn:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #fff;
+}
+.lt-hist-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.lt-albums-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  background: rgba(14, 15, 20, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 16px 18px;
+}
+.lt-albums-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.lt-alb-carousel-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.lt-alb-arrow-btn {
+  height: 36px;
+  background: rgba(10, 11, 15, 0.9);
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lt-alb-arrow-btn:disabled {
+  opacity: 0.3;
+  border-color: rgba(255, 255, 255, 0.14);
+  cursor: default;
+}
+.lt-alb-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.lt-alb-card {
+  height: 132px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  cursor: pointer;
+  overflow: hidden;
+}
+.lt-alb-card.is-active,
+.lt-alb-card:hover {
+  border-color: #dc2626;
+}
+.lt-alb-card-footer {
+  width: 100%;
+  padding: 6px 9px;
+  background: rgba(10, 11, 15, 0.86);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.lt-alb-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lt-alb-card-count {
+  font-size: 0.72rem;
+  color: #f87171;
+  font-weight: 700;
+}
+.lt-alb-grid-top {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.lt-alb-grid-bottom {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.lt-alb-photo-item {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  cursor: context-menu;
+}
+.lt-alb-photo-item.is-large {
+  height: 210px;
+}
+.lt-alb-photo-item.is-small {
+  height: 150px;
+}
+.lt-alb-photo-item.is-hidden {
+  opacity: 0.45;
+  border-style: dashed;
+}
+.lt-alb-photo-caption {
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(10, 11, 15, 0.82);
+  font-size: 0.78rem;
+  color: #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.lt-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 185px;
+  background: #12141c;
+  border: 1px solid rgba(220, 38, 38, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+}
+.lt-ctx-menu button {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  color: #e5e7eb;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.lt-ctx-menu button:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fff;
+}
+.lt-alb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.lt-alb-modal-box {
+  width: 100%;
+  max-width: 440px;
+  background: #12141c;
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  padding: 16px;
+}
+@media (max-width: 900px) {
+  .lt-alb-cards-grid,
+  .lt-alb-grid-bottom {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .lt-alb-grid-top {
+    grid-template-columns: 1fr;
+  }
+}
 
