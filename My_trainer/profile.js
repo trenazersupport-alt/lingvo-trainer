@@ -303,6 +303,13 @@
     const isSelf = st.viewMode === 'self';
     const learnedCount = typeof learnedIds !== 'undefined' ? learnedIds.length : 0;
     const visiblePhotos = isSelf ? p.photos : p.photos.filter(ph => !ph.hidden);
+        const coverStyle = p.cover
+      ? 'background-image:url(\'' + p.cover + '\'); background-size:cover; background-position:center;'
+      : 'background:linear-gradient(120deg, #181a22 0%, #2d1216 55%, #121318 100%);';
+
+    const avatarHtml = p.avatar
+      ? '<img src="' + p.avatar + '" alt="' + p.nick + '" style="width:100%; height:100%; object-fit:cover;" />'
+      : '<div class="lt-prof-avatar-placeholder">' + (p.nick || 'U').at(0).toUpperCase() + '</div>';
     let rightActionHtml = '';
     if (isSelf) {
       rightActionHtml = `
