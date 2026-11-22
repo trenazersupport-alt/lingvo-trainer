@@ -379,21 +379,19 @@
       }
     });
 
-    const rightCards = document.querySelectorAll('.lt-prof-col-right .lt-prof-card');
-    rightCards.forEach(function (card) {
-      const title = card.querySelector('.lt-prof-card-title');
-      if (!title) return;
-      if (title.textContent.trim().startsWith('Возможные друзья')) {
+        const allTitles = document.querySelectorAll('.lt-profile-shell .lt-prof-card-title');
+    allTitles.forEach(function (title) {
+      const txt = title.textContent.trim();
+      if (txt.startsWith('Возможные друзья')) {
         title.style.cursor = 'pointer';
         title.title = 'Открыть все рекомендации друзей';
         title.onclick = function () { window.openSuggestedFriendsPage(); };
-      } else if (title.textContent.trim().startsWith('Сообщества')) {
+      } else if (txt.startsWith('Сообщества')) {
         title.style.cursor = 'pointer';
         title.title = 'Открыть каталог сообществ';
         title.onclick = function () { window.openCommunitiesPage('all'); };
       }
     });
-
     const stats = document.querySelectorAll('.lt-prof-stats-row .lt-prof-stat');
     if (stats.length >= 4) {
       stats.item(1).onclick = function () { window.openSocialListPage('friends', 'all'); };
