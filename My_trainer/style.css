@@ -2481,3 +2481,9 @@ header, .topbar {
     grid-template-columns: 1fr;
   }
 }
+#workspace > .lt-soc-shell,
+#workspace > .lt-albums-shell {
+  width: 100% !important;
+  max-width: 1260px !important;
+  box-sizing: border-box;
+}
