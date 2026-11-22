@@ -92,18 +92,22 @@
     if (backBtn) backBtn.disabled = _navHistory.idx <= 0;
     if (fwdBtn) fwdBtn.disabled = _navHistory.idx >= _navHistory.stack.length - 1;
   }
-
-  function ensureHistoryButtons() {
+    function ensureHistoryButtons() {
     if (document.getElementById('ltHistNavWrap')) return;
-    const brand = document.querySelector('.brand, .logo, header .left, .topbar .left') || document.querySelector('header');
-    if (!brand) return;
+    const accBtn = document.getElementById('topAccountBtn');
+    const parent = accBtn ? accBtn.parentElement : document.querySelector('header');
+    if (!parent) return;
+    parent.style.marginLeft = 'auto';
+    parent.style.display = 'flex';
+    parent.style.alignItems = 'center';
+    parent.style.gap = '8px';
     const wrap = document.createElement('div');
     wrap.id = 'ltHistNavWrap';
     wrap.className = 'lt-hist-nav-wrap';
     wrap.innerHTML =
       '<button id="ltHistBackBtn" class="lt-hist-btn" title="Назад" onclick="ltHistoryBack()">«</button>' +
       '<button id="ltHistFwdBtn" class="lt-hist-btn" title="Вперёд" onclick="ltHistoryForward()">»</button>';
-    brand.appendChild(wrap);
+    parent.appendChild(wrap);
     updateNavArrowsUI();
   }
 
