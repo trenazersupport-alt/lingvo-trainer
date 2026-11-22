@@ -195,8 +195,10 @@
     if (showCityEl) p.showCity = showCityEl.checked;
     if (avatarEl) p.avatar = avatarEl.value.trim();
     if (coverEl) p.cover = coverEl.value.trim();
-
-    const accBtn = document.getElementById('topAccountBtn');
+    if (avatarEl && avatarEl.value.trim() && typeof window.ltApplyNewProfileAvatar === 'function') {
+  window.ltApplyNewProfileAvatar(avatarEl.value.trim());
+}
+   const accBtn = document.getElementById('topAccountBtn');
     if (accBtn) accBtn.textContent = p.nick;
 
     saveProfile(p);
