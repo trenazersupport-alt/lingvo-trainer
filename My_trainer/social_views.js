@@ -588,8 +588,7 @@
             '<button class="btn-primary" onclick="ltCreateCommunityItem()">Создать</button>' +
           '</div>'
         ) : '') +
-
-        '        '<div style="display:flex; flex-direction:column; gap:10px; width:100%;">' +
+             '<div style="display:flex; flex-direction:column; gap:10px; width:100%;">' +
           shown.map(function (c) {
             return '<div style="padding:14px 16px; background:rgba(10,11,15,0.85); border:1px solid rgba(255,255,255,0.14); border-left:3px solid #dc2626; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">' +
               '<div style="flex:1; min-width:260px;">' +
