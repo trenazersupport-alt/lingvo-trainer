@@ -611,3 +611,56 @@
         '</div>' +
   };
 })();
+/* === УНИВЕРСАЛЬНЫЙ ПЕРЕХВАТ КЛИКОВ ПО СЧЁТЧИКАМ И ЗАГОЛОВКАМ ПРОФИЛЯ === */
+document.addEventListener('click', function (e) {
+  if (typeof curTab === 'undefined' || curTab !== 'profile') return;
+
+  // 1. Клики по кнопкам-счётчикам под обложкой
+  const statBtn = e.target.closest('.lt-prof-stat');
+  if (statBtn) {
+    const lbl = statBtn.querySelector('.lt-prof-stat-lbl');
+    const txt = lbl ? lbl.textContent.trim().toLowerCase() : '';
+    if (txt.includes('друз')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openSocialListPage === 'function') window.openSocialListPage('friends', 'all');
+      return;
+    }
+    if (txt.includes('подписч')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openSocialListPage === 'function') window.openSocialListPage('followers', 'all');
+      return;
+    }
+    if (txt.includes('слов')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openLearnedSummaryPage === 'function') window.openLearnedSummaryPage();
+      return;
+    }
+  }
+
+  // 2. Клики по заголовкам карточек профиля: «Друзья», «Возможные друзья», «Сообщества по интересам»
+  const cardTitle = e.target.closest('.lt-prof-card-title');
+  if (cardTitle) {
+    const t = cardTitle.textContent.trim();
+    if (t.startsWith('Возможные друзья')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openSuggestedFriendsPage === 'function') window.openSuggestedFriendsPage();
+      return;
+    }
+    if (t.startsWith('Сообщества')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openCommunitiesPage === 'function') window.openCommunitiesPage('all');
+      return;
+    }
+    if (t.startsWith('Друзья')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window.openSocialListPage === 'function') window.openSocialListPage('friends', 'all');
+      return;
+    }
+  }
+}, true);
