@@ -653,11 +653,17 @@
       .slice(0, 4);
 
     const grid = document.querySelector('.lt-prof-photos-grid');
-        const avaBox = document.querySelector('.lt-prof-avatar-box');
+           const avaBox = document.querySelector('.lt-prof-avatar-box');
     if (avaBox && isSelf) {
       avaBox.style.cursor = 'pointer';
       avaBox.title = 'Нажмите, чтобы загрузить новое фото профиля';
       avaBox.onclick = function () { window.ltTriggerAvatarUpload(); };
+      if (!avaBox.querySelector('.lt-ava-upload-bar')) {
+        const bar = document.createElement('div');
+        bar.className = 'lt-ava-upload-bar';
+        bar.textContent = 'Загрузить фото';
+        avaBox.appendChild(bar);
+      }
     }
     if (!grid) return;
 
@@ -733,11 +739,25 @@
       inp.addEventListener('change', function () {
         const file = inp.files && inp.files.length > 0 ? inp.files.item(0) : null;
         if (!file) return;
-        const reader = new FileReader();
+               const reader = new FileReader();
         reader.onload = function (ev) {
-          compressImageDataUrl(ev.target.result, function (compressedUrl) {
-            window.ltApplyNewProfileAvatar(compressedUrl);
-          });
+          const img = new Image();
+          img.onload = function () {
+            const maxSide = 600;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxSide || h > maxSide) {
+              if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+              else { w = Math.round(w * maxSide / h); h = maxSide; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            window.ltApplyNewProfileAvatar(canvas.toDataURL('image/jpeg', 0.85));
+          };
+          img.onerror = function () { window.ltApplyNewProfileAvatar(ev.target.result); };
+          img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
         inp.value = '';
