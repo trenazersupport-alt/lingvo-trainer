@@ -654,15 +654,24 @@
       .slice(0, 4);
 
     const grid = document.querySelector('.lt-prof-photos-grid');
-           const avaBox = document.querySelector('.lt-prof-avatar-box');
-    if (avaBox && isSelf) {
+               const avaBox = document.querySelector('.lt-prof-avatar-box');
+    if (avaBox) {
       avaBox.style.cursor = 'pointer';
-      avaBox.title = 'Нажмите, чтобы загрузить новое фото профиля';
-      avaBox.onclick = function () { window.ltTriggerAvatarUpload(); };
-      if (!avaBox.querySelector('.lt-ava-upload-bar')) {
+      avaBox.title = 'Нажмите, чтобы открыть фотографии профиля';
+      avaBox.onclick = function (e) {
+        if (e.target && e.target.closest('.lt-ava-upload-bar')) return;
+        if (typeof window.ltOpenAvatarViewer === 'function') window.ltOpenAvatarViewer(0);
+      };
+      if (isSelf && !avaBox.querySelector('.lt-ava-upload-bar')) {
         const bar = document.createElement('div');
         bar.className = 'lt-ava-upload-bar';
         bar.textContent = 'Загрузить фото';
+        bar.title = 'Загрузить новое фото профиля';
+        bar.onclick = function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.ltTriggerAvatarUpload === 'function') window.ltTriggerAvatarUpload(e);
+        };
         avaBox.appendChild(bar);
       }
     }
@@ -857,22 +866,39 @@ try { const r = localStorage.getItem('lt_user_albums_v1'); if (r) data = JSON.pa
     renderPhotoViewerModal();
   };
 
-  window.ltOpenAvatarViewer = function (startIdx) {
-    const data = getAlbumsSafe();
-    const firstAva = data.photos.find(function (x) { return x.albumId === 'alb_avatars'; });
-    if (firstAva) {
-      window.ltOpenPhotoViewerById(firstAva.id, 'alb_avatars');
-      return;
-    }
+   window.ltOpenAvatarViewer = function (startIdx) {
     let curAvatar = '';
     try { curAvatar = JSON.parse(localStorage.getItem(PROF_KEY) || '{}').avatar || ''; } catch (e) {}
-    if (!curAvatar) {
-      alert('В альбоме «Фотографии профиля» пока нет загруженных фотографий.');
+
+    const data = getAlbumsSafe();
+    let avatarAlbum = data.albums.find(function (a) { return a.id === 'alb_avatars'; });
+    let avaPhotos = data.photos.filter(function (x) { return x.albumId === 'alb_avatars'; });
+
+    if (curAvatar && !avaPhotos.some(function (x) { return x.image === curAvatar; })) {
+      if (!avatarAlbum) {
+        avatarAlbum = { id: 'alb_avatars', title: 'Фотографии профиля', privacy: 'public' };
+        data.albums.unshift(avatarAlbum);
+      }
+      data.photos.unshift({
+        id: 'ph_' + Date.now(),
+        albumId: 'alb_avatars',
+        title: 'Фотография профиля',
+        image: curAvatar,
+        color: 'linear-gradient(135deg,#2d1216,#14161f)',
+        hidden: false,
+        createdAt: Date.now()
+      });
+      setAlbumsSafe(data);
+      avaPhotos = data.photos.filter(function (x) { return x.albumId === 'alb_avatars'; });
+    }
+
+    if (!avaPhotos.length) {
+      alert('В альбоме «Фотографии профиля» пока нет загруженных фотографий. Нажмите «Загрузить фото» внизу аватара.');
       return;
     }
-    window._ltPhotoModalState.list = [{ id: 'cur_ava', albumId: 'alb_avatars', title: 'Фотография профиля', image: curAvatar, commentsEnabled: true, comments: [] }];
-    window._ltPhotoModalState.idx = startIdx || 0;
-    renderPhotoViewerModal();
+
+    const firstAva = avaPhotos.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).at(0);
+    window.ltOpenPhotoViewerById(firstAva.id, 'alb_avatars');
   };
 
   window.ltViewerStep = function (delta) {
