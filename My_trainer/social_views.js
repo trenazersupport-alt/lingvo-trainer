@@ -589,26 +589,26 @@
           '</div>'
         ) : '') +
 
-        '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:12px;">' +
+        '        '<div style="display:flex; flex-direction:column; gap:10px; width:100%;">' +
           shown.map(function (c) {
-            return '<div style="padding:14px 16px; background:rgba(10,11,15,0.82); border:1px solid rgba(255,255,255,0.14); border-left:2px solid #dc2626; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">' +
-              '<div>' +
-                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">' +
+            return '<div style="padding:14px 16px; background:rgba(10,11,15,0.85); border:1px solid rgba(255,255,255,0.14); border-left:3px solid #dc2626; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">' +
+              '<div style="flex:1; min-width:260px;">' +
+                '<div style="display:flex; align-items:center; gap:8px; margin-bottom:5px; flex-wrap:wrap;">' +
                   '<span style="color:#fff; font-weight:700; font-size:0.98rem;">' + c.title + '</span>' +
                   '<span class="tag" style="font-size:0.7rem; padding:2px 6px;">' + c.tag + '</span>' +
+                  '<span style="color:#9ea4b0; font-size:0.78rem;">• ' + c.members + ' участников</span>' +
                 '</div>' +
-                '<div style="color:#b8bec9; font-size:0.83rem; line-height:1.45;">' + c.desc + '</div>' +
+                '<div style="color:#b8bec9; font-size:0.84rem; line-height:1.45;">' + c.desc + '</div>' +
               '</div>' +
-              '</div>' +
-              '<div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08);">' +
-                '<span style="color:#9ea4b0; font-size:0.78rem;">' + c.members + ' участников</span>' +
-                '<button class="' + (c.joined ? 'btn-secondary' : 'btn-primary') + '" style="padding:4px 11px; font-size:0.78rem;" onclick="ltToggleCommunityMembership(\'' + c.id + '\')">' +
+              '<div style="flex-shrink:0;">' +
+                '<button class="' + (c.joined ? 'btn-secondary' : 'btn-primary') + '" style="padding:6px 14px; font-size:0.8rem;" onclick="ltToggleCommunityMembership(\'' + c.id + '\')">' +
                   (c.joined ? 'Вы участник ✓' : 'Вступить') +
                 '</button>' +
               '</div>' +
             '</div>';
           }).join('') +
-       '</div>';
+        '</div>' +
+      '</div>';
   };
 })();
 /* === УНИВЕРСАЛЬНЫЙ ПЕРЕХВАТ КЛИКОВ ПО СЧЁТЧИКАМ И ЗАГОЛОВКАМ ПРОФИЛЯ === */
