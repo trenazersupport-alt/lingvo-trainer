@@ -581,6 +581,7 @@
           '</div>' +
         '</div>' +
       '</div>';
+      }
     const editPanelHtml = (isSelf && st.editing) ? `
       <div class="lt-prof-card" style="margin-bottom:12px; border-color:rgba(220,38,38,0.45);">
         <div class="lt-prof-card-title">Редактирование профиля и приватности</div>
