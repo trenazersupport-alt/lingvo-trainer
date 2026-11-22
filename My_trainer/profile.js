@@ -206,7 +206,120 @@
     window._ltProfileState.activeSubPanel = null;
     render();
   };
+  /* === УПРАВЛЕНИЕ ОБЛОЖКОЙ ПРОФИЛЯ И КАДРИРОВАНИЕ === */
+  window.toggleCoverMenu = function (e) {
+    if (e) e.stopPropagation();
+    const m = document.getElementById('ltCoverDropdownMenu');
+    if (m) m.classList.toggle('open');
+  };
 
+  window.triggerCoverUpload = function () {
+    const m = document.getElementById('ltCoverDropdownMenu');
+    if (m) m.classList.remove('open');
+    let inp = document.getElementById('ltDirectCoverFileInput');
+    if (!inp) {
+      inp = document.createElement('input');
+      inp.type = 'file';
+      inp.id = 'ltDirectCoverFileInput';
+      inp.accept = 'image/*';
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+
+      inp.addEventListener('change', function () {
+        const file = inp.files && inp.files.length > 0 ? inp.files.item(0) : null;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+          const img = new Image();
+          img.onload = function () {
+            const maxW = 1280;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxW) {
+              h = Math.round(h * maxW / w);
+              w = maxW;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            window.openCoverCropperModal(compressed, 50);
+          };
+          img.onerror = function () { window.openCoverCropperModal(ev.target.result, 50); };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        inp.value = '';
+      });
+    }
+    inp.click();
+  };
+
+  window.openCoverCropperModal = function (imageSrc, initialY) {
+    const p = loadProfile();
+    const src = imageSrc || p.cover;
+    if (!src) {
+      alert('Сначала загрузите изображение для обложки.');
+      return;
+    }
+    const posY = typeof initialY === 'number' ? initialY : (typeof p.coverPosY === 'number' ? p.coverPosY : 50);
+
+    let modal = document.getElementById('ltCoverCropperModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'ltCoverCropperModal';
+      modal.className = 'lt-alb-modal-backdrop';
+      modal.onclick = function () { modal.remove(); };
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML =
+      '<div class="lt-alb-modal-box" style="max-width:680px;" onclick="event.stopPropagation();">' +
+        '<div class="lt-prof-card-title">' +
+          '<span>Выбор видимой области обложки</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="document.getElementById(\'ltCoverCropperModal\').remove();">✕</button>' +
+        '</div>' +
+        '<div style="font-size:0.8rem; color:#9ea4b0; margin-bottom:8px;">Передвигайте ползунок, чтобы выбрать, какая часть фотографии будет отображаться в шапке профиля:</div>' +
+        '<div id="ltCoverPreviewBox" style="width:100%; height:165px; border:1px solid #dc2626; background-image:url(\'' + src + '\'); background-size:cover; background-position:center ' + posY + '%; margin-bottom:12px;"></div>' +
+        '<div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">' +
+          '<span style="font-size:0.78rem; color:#9ea4b0;">Верх</span>' +
+          '<input id="ltCoverPosRange" type="range" min="0" max="100" value="' + posY + '" style="flex:1; accent-color:#dc2626;" oninput="document.getElementById(\'ltCoverPreviewBox\').style.backgroundPosition = \'center \' + this.value + \'%\';" />' +
+          '<span style="font-size:0.78rem; color:#9ea4b0;">Низ</span>' +
+        '</div>' +
+        '<div style="display:flex; justify-content:flex-end; gap:8px;">' +
+          '<button class="btn-secondary" onclick="document.getElementById(\'ltCoverCropperModal\').remove();">Отмена</button>' +
+          '<button class="btn-primary" id="ltSaveCoverCropBtn">Применить обложку</button>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('ltSaveCoverCropBtn').onclick = function () {
+      const range = document.getElementById('ltCoverPosRange');
+      const finalY = range ? Number(range.value) : 50;
+      const prof = loadProfile();
+      prof.cover = src;
+      prof.coverPosY = finalY;
+      saveProfile(prof);
+      modal.remove();
+      render();
+    };
+  };
+
+  window.removeProfileCover = function () {
+    const m = document.getElementById('ltCoverDropdownMenu');
+    if (m) m.classList.remove('open');
+    const p = loadProfile();
+    p.cover = '';
+    p.coverPosY = 50;
+    saveProfile(p);
+    render();
+  };
+
+  window.scrollToProfileWall = function () {
+    window._ltProfileState.activeSubPanel = null;
+    const wall = document.querySelector('.lt-prof-col-center');
+    if (wall) wall.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
    window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
     const b = document.getElementById('ltNewNoteBody');
@@ -305,10 +418,10 @@
     const isSelf = st.viewMode === 'self';
     const learnedCount = typeof learnedIds !== 'undefined' ? learnedIds.length : 0;
     const visiblePhotos = isSelf ? p.photos : p.photos.filter(ph => !ph.hidden);
-        const coverStyle = p.cover
-      ? 'background-image:url(\'' + p.cover + '\'); background-size:cover; background-position:center;'
-      : 'background:linear-gradient(120deg, #181a22 0%, #2d1216 55%, #121318 100%);';
-
+         const coverPosY = typeof p.coverPosY === 'number' ? p.coverPosY : 50;
+ const coverStyle = p.cover
+   ? 'background-image:url(\'' + p.cover + '\'); background-size:cover; background-position:center ' + coverPosY + '%;'
+   : 'background:linear-gradient(120deg, #181a22 0%, #2d1216 55%, #121318 100%);';
     const avatarHtml = p.avatar
       ? '<img src="' + p.avatar + '" alt="' + p.nick + '" style="width:100%; height:100%; object-fit:cover;" />'
       : '<div class="lt-prof-avatar-placeholder">' + (p.nick || 'U').at(0).toUpperCase() + '</div>';
@@ -429,7 +542,45 @@
           }).join('') +
         '</div>' +
       '</div>';
-    }
+        } else if (st.activeSubPanel === 'followers') {
+      const followersList = [
+        { name: 'Хана Чхве', handle: '@hana_seoul', lang: 'Корейский (носитель)' },
+        { name: 'Дмитрий Л.', handle: '@dima_learn', lang: 'Корейский A2' },
+        { name: 'Алина М.', handle: '@alina_en', lang: 'Английский B2' },
+        { name: 'Тэмин Кан', handle: '@taemin_k', lang: 'Корейский (носитель)' }
+      ];
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Подписчики профиля (' + p.followers + ')</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'followers\')">Закрыть</button>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:8px;">' +
+          followersList.map(function (fl) {
+            return '<div style="padding:8px 10px; background:rgba(10,11,15,0.75); border:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; gap:10px;">' +
+              '<div class="lt-mini-ava">' + fl.name.at(0) + '</div>' +
+              '<div>' +
+                '<div style="color:#fff; font-weight:600; font-size:0.86rem;">' + fl.name + '</div>' +
+                '<div style="color:#9ea4b0; font-size:0.75rem;">' + fl.lang + '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    } else if (st.activeSubPanel === 'langs') {
+      subPanelHtml = '<div class="lt-prof-card" style="margin-bottom:12px;">' +
+        '<div class="lt-prof-card-title"><span>Изучаемые языки и прогресс</span>' +
+          '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="toggleProfileSubMenu(\'langs\')">Закрыть</button>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">' +
+          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; display:flex; justify-content:space-between; align-items:center;">' +
+            '<div><div style="color:#fff; font-weight:700; font-size:0.9rem;">Корейский язык (KO)</div><div style="color:#9ea4b0; font-size:0.78rem;">Основной курс • Уровень A2–B1</div></div>' +
+            '<button class="btn-primary" style="padding:5px 10px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'ko\'); switchTab(\'cards\');">Открыть</button>' +
+          '</div>' +
+          '<div style="padding:10px 12px; background:rgba(10,11,15,0.75); border-left:2px solid #dc2626; display:flex; justify-content:space-between; align-items:center;">' +
+            '<div><div style="color:#fff; font-weight:700; font-size:0.9rem;">Английский язык (EN)</div><div style="color:#9ea4b0; font-size:0.78rem;">Дополнительный курс • Уровень B2</div></div>' +
+            '<button class="btn-secondary" style="padding:5px 10px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'en\'); switchTab(\'cards\');">Открыть</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     const editPanelHtml = (isSelf && st.editing) ? `
       <div class="lt-prof-card" style="margin-bottom:12px; border-color:rgba(220,38,38,0.45);">
         <div class="lt-prof-card-title">Редактирование профиля и приватности</div>
@@ -478,41 +629,49 @@
           <span style="font-size:0.82rem; color:#e5e7eb;">Режим предпросмотра: так ваш профиль видят другие пользователи</span>
           <button class="btn-primary" style="padding:5px 12px; font-size:0.8rem;" onclick="openUserProfile('self')">Вернуться в мой профиль</button>
         </div>` : ''}
-        <div class="lt-prof-header-box">
-          <div class="lt-prof-cover" style="${coverStyle}">
-            <div class="lt-prof-cover-badge">LINGVO TRAINER ID</div>
-          </div>
+            <div class="lt-prof-header-box">
+       <div class="lt-prof-cover" style="${coverStyle}">
+         ${isSelf ? `
+           <div class="lt-prof-cover-menu-wrap">
+             <button class="lt-prof-cover-arrow-btn" onclick="toggleCoverMenu(event)" title="Настройки обложки">▾</button>
+             <div id="ltCoverDropdownMenu" class="lt-prof-dropdown-menu" style="right:0; top:36px;">
+               <button onclick="triggerCoverUpload()">Загрузить обложку с ПК</button>
+               ${p.cover ? `<button onclick="document.getElementById('ltCoverDropdownMenu').classList.remove('open'); openCoverCropperModal();">Изменить видимую область</button>` : ''}
+               ${p.cover ? `<button style="color:#ff8787;" onclick="removeProfileCover()">Удалить обложку</button>` : ''}
+             </div>
+           </div>
+         ` : ''}
+       </div>
 
-          <div class="lt-prof-bar">
-            <div class="lt-prof-avatar-box">${avatarHtml}</div>
+       <div class="lt-prof-bar">
+         <div class="lt-prof-avatar-box">${avatarHtml}</div>
 
-            <div class="lt-prof-stats-row">
-              <div class="lt-prof-stat">
-                <div class="lt-prof-stat-val">${p.posts.length}</div>
-                <div class="lt-prof-stat-lbl">записей</div>
-              </div>
-              <div class="lt-prof-stat" onclick="toggleProfileSubMenu('friends')" style="cursor:pointer;">
-                <div class="lt-prof-stat-val">${p.friends.length}</div>
-                <div class="lt-prof-stat-lbl">друзей</div>
-              </div>
-              <div class="lt-prof-stat">
-                <div class="lt-prof-stat-val">${p.followers}</div>
-                <div class="lt-prof-stat-lbl">подписчиков</div>
-              </div>
-              <div class="lt-prof-stat">
-                <div class="lt-prof-stat-val">${learnedCount}</div>
-                <div class="lt-prof-stat-lbl">слов изучено</div>
-              </div>
-              <div class="lt-prof-stat">
-                <div class="lt-prof-stat-val">KO / EN</div>
-                <div class="lt-prof-stat-lbl">языки</div>
-              </div>
-              <div class="lt-prof-stat">
-                <div class="lt-prof-stat-val">#14 • ${p.streakDays}д</div>
-                <div class="lt-prof-stat-lbl">рейтинг</div>
-              </div>
-                       </div>
-
+         <div class="lt-prof-stats-row">
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="scrollToProfileWall()" title="Перейти к записям на стене">
+             <div class="lt-prof-stat-val">${p.posts.length}</div>
+             <div class="lt-prof-stat-lbl">записей</div>
+           </div>
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="toggleProfileSubMenu('friends')" title="Открыть список друзей">
+             <div class="lt-prof-stat-val">${p.friends.length}</div>
+             <div class="lt-prof-stat-lbl">друзей</div>
+           </div>
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="toggleProfileSubMenu('followers')" title="Открыть список подписчиков">
+             <div class="lt-prof-stat-val">${p.followers}</div>
+             <div class="lt-prof-stat-lbl">подписчиков</div>
+           </div>
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="if(typeof switchTab==='function') switchTab('dict');" title="Перейти в личный словарь">
+             <div class="lt-prof-stat-val">${learnedCount}</div>
+             <div class="lt-prof-stat-lbl">слов изучено</div>
+           </div>
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="toggleProfileSubMenu('langs')" title="Изучаемые языки">
+             <div class="lt-prof-stat-val">KO / EN</div>
+             <div class="lt-prof-stat-lbl">языки</div>
+           </div>
+           <div class="lt-prof-stat lt-prof-stat-btn" onclick="if(typeof switchTab==='function') switchTab('rating');" title="Перейти в рейтинг">
+             <div class="lt-prof-stat-val">#14 • ${p.streakDays}д</div>
+             <div class="lt-prof-stat-lbl">рейтинг</div>
+           </div>
+         </div>
             <div class="lt-prof-actions-row">
               <div class="lt-prof-dropdown-wrap">
                 <button class="btn-secondary lt-prof-action-btn" onclick="toggleProfileSubMenu()">Разделы ▾</button>
