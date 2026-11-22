@@ -379,7 +379,6 @@
       }
     }, 60);
   };
-  };
    window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
     const b = document.getElementById('ltNewNoteBody');
