@@ -1,0 +1,401 @@
+/* === МОДУЛЬ СТРАНИЦ: ДРУЗЬЯ, ПОДПИСЧИКИ И СВОДНЫЙ СЛОВАРЬ ИЗУЧЕННЫХ СЛОВ (social_views.js) === */
+(function () {
+  const PROF_KEY = 'lt_user_profile_v1';
+  const SOCIAL_KEY = 'lt_social_lists_v1';
+
+  function loadProfSafe() {
+    try {
+      const r = localStorage.getItem(PROF_KEY);
+      if (r) return JSON.parse(r);
+    } catch (e) {}
+    return { nick: 'ekstshafor', friends: [], followers: 24, suggestedFriends: [] };
+  }
+
+  function saveProfSafe(p) {
+    try { localStorage.setItem(PROF_KEY, JSON.stringify(p)); } catch (e) {}
+  }
+
+  function loadSocialLists() {
+    try {
+      const r = localStorage.getItem(SOCIAL_KEY);
+      if (r) return JSON.parse(r);
+    } catch (e) {}
+    return {
+      followersList: [
+        { id: 'fl_1', name: 'Хана Чхве', handle: '@hana_seoul', lang: 'Корейский (носитель)', online: true },
+        { id: 'fl_2', name: 'Дмитрий Л.', handle: '@dima_learn', lang: 'Корейский A2', online: true },
+        { id: 'fl_3', name: 'Алина М.', handle: '@alina_en', lang: 'Английский B2', online: false },
+        { id: 'fl_4', name: 'Тэмин Кан', handle: '@taemin_k', lang: 'Корейский (носитель)', online: true },
+        { id: 'fl_5', name: 'Ольга Смирнова', handle: '@olga_topik', lang: 'Корейский B1', online: false },
+        { id: 'fl_6', name: 'Кевин Пак', handle: '@kevin_kr', lang: 'Носитель KO / EN', online: true },
+        { id: 'fl_7', name: 'Наталья К.', handle: '@natali_en', lang: 'Английский C1', online: false },
+        { id: 'fl_8', name: 'Юна Ли', handle: '@yuna_busan', lang: 'Корейский (носитель)', online: true },
+        { id: 'fl_9', name: 'Артём В.', handle: '@artem_hanja', lang: 'Корейский A1', online: false },
+        { id: 'fl_10', name: 'София Р.', handle: '@sofia_study', lang: 'Английский B1', online: true },
+        { id: 'fl_11', name: 'Минхо Чон', handle: '@minho_j', lang: 'Корейский (носитель)', online: false },
+        { id: 'fl_12', name: 'Елена Б.', handle: '@elena_lang', lang: 'Корейский A2', online: true }
+      ],
+      friendRequests: [
+        { id: 'req_1', name: 'Субин Ким', handle: '@subin_seoul', lang: 'Носитель KO • Ищет обмен', online: true },
+        { id: 'req_2', name: 'Максим Г.', handle: '@max_english', lang: 'Английский B2', online: true },
+        { id: 'req_3', name: 'Джису Пак', handle: '@jisoo_kr', lang: 'Корейский (носитель)', online: false }
+      ],
+      extraSuggested: [
+        { id: 'sug_4', name: 'Чонгук Ли', handle: '@jk_tutor', lang: 'Носитель KO • Грамматика', online: true },
+        { id: 'sug_5', name: 'Виктория Н.', handle: '@vika_words', lang: 'Английский C1', online: true },
+        { id: 'sug_6', name: 'Хёнджин Чхве', handle: '@hj_seoul', lang: 'Корейский (носитель)', online: false },
+        { id: 'sug_7', name: 'Павел Д.', handle: '@pavel_ko', lang: 'Корейский B1', online: true }
+      ]
+    };
+  }
+
+  function saveSocialLists(data) {
+    try { localStorage.setItem(SOCIAL_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  window._ltSocialState = {
+    mode: 'friends', // 'friends' | 'followers'
+    subFilter: 'all', // 'all' | 'online' | 'requests'
+    page: 0,
+    suggestedExpanded: false,
+    learnedLangFilter: 'all' // 'all' | 'ko' | 'en'
+  };
+
+  window.openSocialListPage = function (mode, subFilter) {
+    window._ltSocialState.mode = mode || 'friends';
+    window._ltSocialState.subFilter = subFilter || 'all';
+    window._ltSocialState.page = 0;
+    window._ltSocialState.suggestedExpanded = false;
+    if (typeof switchTab === 'function') {
+      switchTab('social_list');
+    } else {
+      window.curTab = 'social_list';
+      if (typeof render === 'function') render();
+    }
+  };
+
+  window.openLearnedSummaryPage = function () {
+    window._ltSocialState.learnedLangFilter = 'all';
+    if (typeof switchTab === 'function') {
+      switchTab('learned_summary');
+    } else {
+      window.curTab = 'learned_summary';
+      if (typeof render === 'function') render();
+    }
+  };
+
+  window.ltSocialAcceptRequest = function (reqId) {
+    const social = loadSocialLists();
+    const prof = loadProfSafe();
+    const idx = social.friendRequests.findIndex(function (x) { return x.id === reqId; });
+    if (idx === -1) return;
+    const person = social.friendRequests.splice(idx, 1).at(0);
+    if (!Array.isArray(prof.friends)) prof.friends = [];
+    prof.friends.unshift({
+      id: person.id,
+      name: person.name,
+      handle: person.handle,
+      lang: person.lang,
+      online: person.online !== false,
+      isFriend: true
+    });
+    saveSocialLists(social);
+    saveProfSafe(prof);
+    if (typeof render === 'function') render();
+  };
+
+  window.ltSocialDeclineRequest = function (reqId) {
+    const social = loadSocialLists();
+    social.friendRequests = social.friendRequests.filter(function (x) { return x.id !== reqId; });
+    saveSocialLists(social);
+    if (typeof render === 'function') render();
+  };
+
+  window.ltSocialAddSuggested = function (sugId) {
+    const social = loadSocialLists();
+    const prof = loadProfSafe();
+    let person = null;
+
+    if (Array.isArray(prof.suggestedFriends)) {
+      const i1 = prof.suggestedFriends.findIndex(function (x) { return x.id === sugId; });
+      if (i1 !== -1) person = prof.suggestedFriends.splice(i1, 1).at(0);
+    }
+    if (!person && Array.isArray(social.extraSuggested)) {
+      const i2 = social.extraSuggested.findIndex(function (x) { return x.id === sugId; });
+      if (i2 !== -1) person = social.extraSuggested.splice(i2, 1).at(0);
+    }
+    if (!person) return;
+
+    if (!Array.isArray(prof.friends)) prof.friends = [];
+    prof.friends.unshift({
+      id: person.id,
+      name: person.name,
+      handle: person.handle,
+      lang: person.lang,
+      online: true,
+      isFriend: true
+    });
+    saveSocialLists(social);
+    saveProfSafe(prof);
+    if (typeof render === 'function') render();
+  };
+
+  window.ltSocialAddFollowerToFriends = function (flId) {
+    const social = loadSocialLists();
+    const prof = loadProfSafe();
+    const person = social.followersList.find(function (x) { return x.id === flId; });
+    if (!person) return;
+    if (!Array.isArray(prof.friends)) prof.friends = [];
+    if (!prof.friends.some(function (f) { return f.id === flId; })) {
+      prof.friends.unshift({
+        id: person.id,
+        name: person.name,
+        handle: person.handle,
+        lang: person.lang,
+        online: person.online !== false,
+        isFriend: true
+      });
+      saveProfSafe(prof);
+    }
+    if (typeof render === 'function') render();
+  };
+
+  window.ltSocialRemoveFriend = function (frId) {
+    const prof = loadProfSafe();
+    if (!Array.isArray(prof.friends)) return;
+    prof.friends = prof.friends.filter(function (f) { return f.id !== frId; });
+    saveProfSafe(prof);
+    if (typeof render === 'function') render();
+  };
+  /* === ОТРИСОВКА СТРАНИЦ «ДРУЗЬЯ» И «ПОДПИСЧИКИ» ПО МАКЕТУ === */
+  window.renderSocialListView = function (ws) {
+    const st = window._ltSocialState;
+    const prof = loadProfSafe();
+    const social = loadSocialLists();
+    const isFriendsMode = st.mode === 'friends';
+
+    const friendsList = (Array.isArray(prof.friends) ? prof.friends : []).map(function (f, idx) {
+      return Object.assign({ online: idx % 2 === 0 }, f);
+    });
+    const baseList = isFriendsMode ? friendsList : social.followersList;
+    const requestsList = social.friendRequests || [];
+
+    let filteredList = [];
+    if (st.subFilter === 'requests') {
+      filteredList = requestsList;
+    } else if (st.subFilter === 'online') {
+      filteredList = baseList.filter(function (u) { return u.online; });
+    } else {
+      filteredList = baseList;
+    }
+
+    const perPage = 10;
+    const totalPages = Math.max(1, Math.ceil(filteredList.length / perPage));
+    if (st.page >= totalPages) st.page = totalPages - 1;
+    if (st.page < 0) st.page = 0;
+    const pageItems = filteredList.slice(st.page * perPage, st.page * perPage + perPage);
+
+    const baseSug = Array.isArray(prof.suggestedFriends) ? prof.suggestedFriends : [];
+    const extraSug = Array.isArray(social.extraSuggested) ? social.extraSuggested : [];
+    const allSuggested = baseSug.concat(extraSug);
+    const shownSuggested = st.suggestedExpanded ? allSuggested : allSuggested.slice(0, 4);
+
+    const firstTabLabel = isFriendsMode ? ('Все друзья (' + friendsList.length + ')') : ('Все подписчики (' + social.followersList.length + ')');
+    const onlineCount = baseList.filter(function (u) { return u.online; }).length;
+
+    ws.innerHTML =
+      '<div class="lt-soc-shell">' +
+        '<div class="lt-soc-topbar">' +
+          '<div class="lt-soc-tabs">' +
+            '<button class="lt-soc-tab ' + (st.subFilter === 'all' ? 'is-active' : '') + '" onclick="window._ltSocialState.subFilter=\'all\'; window._ltSocialState.page=0; render();">' + firstTabLabel + '</button>' +
+            '<button class="lt-soc-tab ' + (st.subFilter === 'online' ? 'is-active' : '') + '" onclick="window._ltSocialState.subFilter=\'online\'; window._ltSocialState.page=0; render();">Онлайн (' + onlineCount + ')</button>' +
+            '<button class="lt-soc-tab is-req ' + (st.subFilter === 'requests' ? 'is-active' : '') + '" onclick="window._ltSocialState.subFilter=\'requests\'; window._ltSocialState.page=0; render();">Заявки в друзья (' + requestsList.length + ')</button>' +
+          '</div>' +
+          '<button class="lt-soc-close-btn" onclick="openUserProfile(\'self\')" title="Закрыть и вернуться в профиль">✕</button>' +
+        '</div>' +
+
+        '<div class="lt-soc-body">' +
+          '<div class="lt-soc-left">' +
+            '<div class="lt-soc-rows">' +
+              (pageItems.length ? pageItems.map(function (u) {
+                const alreadyFriend = friendsList.some(function (f) { return f.id === u.id; });
+                let actionButtons = '';
+
+                if (st.subFilter === 'requests') {
+                  actionButtons =
+                    '<button class="btn-primary" style="padding:4px 10px; font-size:0.76rem;" onclick="ltSocialAcceptRequest(\'' + u.id + '\')">Принять</button>' +
+                    '<button class="btn-secondary" style="padding:4px 9px; font-size:0.76rem;" onclick="ltSocialDeclineRequest(\'' + u.id + '\')">Отклонить</button>';
+                } else if (isFriendsMode) {
+                  actionButtons =
+                    '<button class="btn-secondary" style="padding:4px 10px; font-size:0.76rem;" onclick="alert(\'Чат с ' + u.name.replace(/'/g, "\\'") + ' открыт в разделе Сообщения\')">Написать</button>' +
+                    '<button class="btn-secondary" style="padding:4px 9px; font-size:0.76rem; color:#ff8787;" onclick="ltSocialRemoveFriend(\'' + u.id + '\')">Удалить</button>';
+                } else {
+                  actionButtons = alreadyFriend
+                    ? '<span style="font-size:0.76rem; color:#9ea4b0; padding:4px 8px; border:1px solid rgba(255,255,255,0.12);">В друзьях</span>'
+                    : '<button class="btn-primary" style="padding:4px 10px; font-size:0.76rem;" onclick="ltSocialAddFollowerToFriends(\'' + u.id + '\')">Добавить в друзья</button>';
+                }
+
+                return '<div class="lt-soc-row">' +
+                  '<div class="lt-soc-user">' +
+                    '<div class="lt-mini-ava" style="position:relative;">' + u.name.at(0) +
+                      (u.online ? '<span class="lt-online-dot" title="Онлайн"></span>' : '') +
+                    '</div>' +
+                    '<div style="min-width:0;">' +
+                      '<div style="color:#fff; font-weight:600; font-size:0.9rem;">' + u.name + ' <span style="color:#f87171; font-size:0.78rem; font-weight:400;">' + (u.handle || '') + '</span></div>' +
+                      '<div style="color:#9ea4b0; font-size:0.78rem;">' + (u.lang || '') + '</div>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="lt-soc-row-actions">' + actionButtons + '</div>' +
+                '</div>';
+              }).join('') : '<div style="padding:24px; text-align:center; color:#9ea4b0; font-size:0.88rem;">В этом списке пока никого нет.</div>') +
+            '</div>' +
+
+            '<div class="lt-soc-pager">' +
+              '<button class="lt-alb-arrow-btn" ' + (st.page <= 0 ? 'disabled' : '') + ' onclick="window._ltSocialState.page--; render();">«</button>' +
+              '<span style="font-size:0.8rem; color:#9ea4b0;">Страница ' + (st.page + 1) + ' из ' + totalPages + '</span>' +
+              '<button class="lt-alb-arrow-btn" ' + (st.page >= totalPages - 1 ? 'disabled' : '') + ' onclick="window._ltSocialState.page++; render();">»</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="lt-soc-right">' +
+            '<div class="lt-soc-sug-box">' +
+              '<div class="lt-prof-card-title">Возможные друзья</div>' +
+              '<div style="display:flex; flex-direction:column; gap:8px;">' +
+                (shownSuggested.length ? shownSuggested.map(function (sf) {
+                  return '<div class="lt-soc-sug-item">' +
+                    '<div class="lt-mini-ava">' + sf.name.at(0) + '</div>' +
+                    '<div style="flex:1; min-width:0;">' +
+                      '<div style="color:#fff; font-weight:600; font-size:0.84rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + sf.name + '</div>' +
+                      '<div style="color:#9ea4b0; font-size:0.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + sf.lang + '</div>' +
+                    '</div>' +
+                    '<button class="btn-secondary" style="padding:3px 8px; font-size:0.74rem;" onclick="ltSocialAddSuggested(\'' + sf.id + '\')">+ Добавить</button>' +
+                  '</div>';
+                }).join('') : '<div style="color:#9ea4b0; font-size:0.8rem;">Новых рекомендаций пока нет</div>') +
+              '</div>' +
+            '</div>' +
+            (allSuggested.length > 4 ? (
+              '<div style="display:flex; justify-content:flex-end; margin-top:8px;">' +
+                '<button class="lt-soc-expand-btn" onclick="window._ltSocialState.suggestedExpanded = !window._ltSocialState.suggestedExpanded; render();">' +
+                  (st.suggestedExpanded ? 'Свернуть' : 'Развернуть') +
+                '</button>' +
+              '</div>'
+            ) : '') +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  };
+
+  /* === СВОДНАЯ СТРАНИЦА ИЗУЧЕННЫХ СЛОВ (КОРЕЙСКИЙ + АНГЛИЙСКИЙ) === */
+  window.renderLearnedSummaryView = function (ws) {
+    const st = window._ltSocialState;
+    let allLearned = [];
+
+    try {
+      if (typeof learnedIds !== 'undefined' && Array.isArray(learnedIds) && typeof WORDS_DB !== 'undefined') {
+        Object.keys(WORDS_DB).forEach(function (langKey) {
+          const cats = WORDS_DB[langKey] || {};
+          Object.keys(cats).forEach(function (catName) {
+            (cats[catName] || []).forEach(function (w) {
+              if (learnedIds.includes(w.id)) {
+                allLearned.push({
+                  id: w.id,
+                  lang: langKey,
+                  category: catName,
+                  word: w.word,
+                  translit: w.translit || '',
+                  meaning: w.meaning
+                });
+              }
+            });
+          });
+        });
+      }
+    } catch (e) {}
+
+    const koCount = allLearned.filter(function (x) { return x.lang === 'ko'; }).length;
+    const enCount = allLearned.filter(function (x) { return x.lang === 'en'; }).length;
+    const shown = allLearned.filter(function (x) {
+      return st.learnedLangFilter === 'all' || x.lang === st.learnedLangFilter;
+    });
+
+    ws.innerHTML =
+      '<div class="lt-soc-shell">' +
+        '<div class="lt-soc-topbar">' +
+          '<div class="lt-soc-tabs">' +
+            '<button class="lt-soc-tab ' + (st.learnedLangFilter === 'all' ? 'is-active' : '') + '" onclick="window._ltSocialState.learnedLangFilter=\'all\'; render();">Все изученные (' + allLearned.length + ')</button>' +
+            '<button class="lt-soc-tab ' + (st.learnedLangFilter === 'ko' ? 'is-active' : '') + '" onclick="window._ltSocialState.learnedLangFilter=\'ko\'; render();">Корейский (' + koCount + ')</button>' +
+            '<button class="lt-soc-tab ' + (st.learnedLangFilter === 'en' ? 'is-active' : '') + '" onclick="window._ltSocialState.learnedLangFilter=\'en\'; render();">Английский (' + enCount + ')</button>' +
+          '</div>' +
+          '<button class="lt-soc-close-btn" onclick="openUserProfile(\'self\')" title="Закрыть и вернуться в профиль">✕</button>' +
+        '</div>' +
+
+               '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px; flex-wrap:wrap;">' +
+          '<div style="font-size:0.86rem; color:#9ea4b0;">Объединённый прогресс по всем курсам платформы</div>' +
+          '<div style="display:flex; gap:8px;">' +
+            '<button class="btn-secondary" style="padding:5px 11px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'ko\'); switchTab(\'cards\');">Курс корейского →</button>' +
+            '<button class="btn-secondary" style="padding:5px 11px; font-size:0.78rem;" onclick="if(typeof setLang===\'function\') setLang(\'en\'); switchTab(\'cards\');">Курс английского →</button>' +
+          '</div>' +
+        '</div>' +
+
+        (shown.length ? (
+          '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:10px;">' +
+            shown.map(function (item) {
+              return '<div style="padding:10px 12px; background:rgba(10,11,15,0.82); border:1px solid rgba(255,255,255,0.12); border-left:2px solid #dc2626; display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+                '<div>' +
+                  '<div style="font-weight:700; color:#fff; font-size:0.95rem;">' + item.word + '</div>' +
+                  (item.translit ? '<div style="color:#f87171; font-size:0.78rem;">' + item.translit + '</div>' : '') +
+                  '<div style="color:#cbd5e1; font-size:0.84rem; margin-top:2px;">' + item.meaning + '</div>' +
+                '</div>' +
+                '<span class="tag" style="font-size:0.7rem; padding:2px 6px;">' + item.lang.toUpperCase() + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>'
+        ) : '<div style="padding:28px; text-align:center; color:#9ea4b0; font-size:0.9rem;">В выбранной категории пока нет отмеченных изученных слов. Отмечайте слова кнопкой «Знаю» в карточках!</div>') +
+      '</div>';
+  };
+
+  /* === ПОДКЛЮЧЕНИЕ В RENDER И ПРИВЯЗКА СЧЁТЧИКОВ ПРОФИЛЯ === */
+  function syncProfileSocialLinks() {
+    if (typeof curTab === 'undefined' || curTab !== 'profile') return;
+
+    const cards = document.querySelectorAll('.lt-prof-col-left .lt-prof-card');
+    cards.forEach(function (card) {
+      const title = card.querySelector('.lt-prof-card-title');
+      if (title && title.textContent.trim().startsWith('Друзья')) {
+        title.style.cursor = 'pointer';
+        title.title = 'Открыть страницу друзей';
+        title.onclick = function () { window.openSocialListPage('friends', 'all'); };
+      }
+    });
+
+    const stats = document.querySelectorAll('.lt-prof-stats-row .lt-prof-stat');
+    if (stats.length >= 4) {
+      stats.item(1).onclick = function () { window.openSocialListPage('friends', 'all'); };
+      stats.item(2).onclick = function () { window.openSocialListPage('followers', 'all'); };
+      stats.item(3).onclick = function () { window.openLearnedSummaryPage(); };
+    }
+  }
+
+  const _prevRenderBeforeSocial = window.render;
+  window.render = function () {
+    if (typeof curTab !== 'undefined' && curTab === 'social_list') {
+      document.body.classList.add('is-home');
+      const ws = document.getElementById('workspace');
+      if (ws) {
+        window.renderSocialListView(ws);
+        return;
+      }
+    }
+    if (typeof curTab !== 'undefined' && curTab === 'learned_summary') {
+      document.body.classList.add('is-home');
+      const ws = document.getElementById('workspace');
+      if (ws) {
+        window.renderLearnedSummaryView(ws);
+        return;
+      }
+    }
+    const res = typeof _prevRenderBeforeSocial === 'function' ? _prevRenderBeforeSocial() : undefined;
+    syncProfileSocialLinks();
+    return res;
+  };
+})();
