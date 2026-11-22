@@ -532,7 +532,7 @@
 
   const _prevRenderBeforeProfile = window.render;
   window.render = function () {
-    if (window.curTab === 'profile') {
+   if (typeof curTab !== 'undefined' && curTab === 'profile') {
       document.body.classList.remove('is-home');
       const ws = document.getElementById('workspace');
       if (ws) {
