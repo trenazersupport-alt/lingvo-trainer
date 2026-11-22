@@ -319,7 +319,7 @@
     const wall = document.querySelector('.lt-prof-col-center');
     if (wall) wall.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-   window.ltOpenLanguageCourse = function (langCode) {
+    window.ltOpenLanguageCourse = function (langCode) {
     if (typeof setLang === 'function') setLang(langCode);
     const headerLangBtn = document.querySelector('[data-lang="' + langCode + '"], #langBtn_' + langCode);
     if (headerLangBtn) headerLangBtn.click();
@@ -332,37 +332,53 @@
     }
 
     setTimeout(function () {
-      // 1. Автоматически открываем боковую шторку меню
-      const sidebar = document.querySelector('.sidebar, .side-menu, #sidebar, nav.drawer, [class*="sidebar"]');
-      if (sidebar) {
-        sidebar.classList.add('open', 'is-open', 'active');
-        sidebar.style.transform = 'translateX(0)';
-        sidebar.style.display = '';
-      } else {
-        const menuToggle = document.querySelector('#menuBtn, .menu-toggle, .burger-btn, header button');
-        if (menuToggle && !menuToggle.closest('#ltHistNavWrap')) menuToggle.click();
+      // 1. Автоматически раскрываем боковую шторку меню слева
+      const collapsedDrawer = document.querySelector('.sidebar.collapsed, .drawer.collapsed, aside.collapsed, [class*="sidebar"][class*="collaps"]');
+      if (collapsedDrawer) {
+        collapsedDrawer.classList.remove('collapsed', 'is-collapsed', 'closed', 'hidden');
+      }
+      const openDrawerBtn = document.querySelector('.sidebar-toggle, .drawer-toggle, #sidebarToggle, [aria-label*="меню"], [title*="Меню"], [title*="Открыть"]');
+      if (openDrawerBtn && !openDrawerBtn.closest('#ltHistNavWrap')) {
+        openDrawerBtn.click();
       }
 
-      // 2. Убираем заглушку «Раздел в разработке» и показываем панель выбранного курса
+      // 2. Показываем вертикальное меню разделов выбранного курса
       const ws = document.getElementById('workspace');
-      if (ws && ws.textContent.includes('Раздел в разработке')) {
+      if (ws && (ws.textContent.includes('Раздел в разработке') || ws.querySelector('.lt-course-hub'))) {
         const isKo = langCode === 'ko';
+        const items = [
+          { tab: 'words', title: 'База слов', desc: 'Изучение лексики по темам с озвучкой и карточками', primary: true },
+          { tab: 'vocab', title: 'Личный словарь', desc: 'Повторение сохранённых и изученных слов' },
+          ...(isKo ? [{ tab: 'hanja', title: 'Корни слов (Ханча)', desc: 'Разбор иероглифических корней и однокоренных слов' }] : []),
+          { tab: 'grammar', title: 'Грамматика', desc: 'Правила, конструкции и примеры использования' },
+          { tab: 'voice', title: 'Тренировка голоса', desc: 'Практика произношения и аудирования' },
+          { tab: 'quiz', title: 'Игра: Вопрос-Ответ', desc: 'Быстрая проверка знаний в игровом формате' }
+        ];
+
         ws.innerHTML =
-          '<div class="lt-soc-shell" style="max-width:960px;">' +
-            '<div class="lt-prof-card-title" style="margin-bottom:12px;">' +
+          '<div class="lt-soc-shell lt-course-hub" style="max-width:640px;">' +
+            '<div class="lt-prof-card-title" style="margin-bottom:10px;">' +
               '<span>' + (isKo ? 'Курс корейского языка (KO)' : 'Курс английского языка (EN)') + '</span>' +
               '<span class="tag">' + (isKo ? 'Основной курс' : 'Дополнительный курс') + '</span>' +
             '</div>' +
-            '<div style="color:#b8bec9; font-size:0.88rem; margin-bottom:16px;">Выберите раздел в левой шторке или перейдите сразу к тренировке:</div>' +
-            '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">' +
-              '<button class="btn-primary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'words\');">База слов →</button>' +
-              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'vocab\');">Личный словарь →</button>' +
-              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'grammar\');">Грамматика →</button>' +
-              '<button class="btn-secondary" style="padding:10px 14px;" onclick="if(typeof switchTab===\'function\') switchTab(\'voice\');">Тренировка голоса →</button>' +
+            '<div style="color:#b8bec9; font-size:0.86rem; margin-bottom:14px;">Выберите учебный раздел для старта:</div>' +
+            '<div style="display:flex; flex-direction:column; gap:9px;">' +
+              items.map(function (it) {
+                return '<button class="' + (it.primary ? 'btn-primary' : 'btn-secondary') + '" ' +
+                  'style="width:100%; text-align:left; padding:11px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;" ' +
+                  'onclick="if(typeof switchTab===\'function\') switchTab(\'' + it.tab + '\');">' +
+                  '<div>' +
+                    '<div style="font-weight:700; font-size:0.92rem; color:#fff;">' + it.title + '</div>' +
+                    '<div style="font-size:0.78rem; color:' + (it.primary ? 'rgba(255,255,255,0.85)' : '#9ea4b0') + '; margin-top:2px;">' + it.desc + '</div>' +
+                  '</div>' +
+                  '<span style="font-size:0.95rem; font-weight:700;">→</span>' +
+                '</button>';
+              }).join('') +
             '</div>' +
           '</div>';
       }
     }, 60);
+  };
   };
    window.addProfileNote = function () {
     const t = document.getElementById('ltNewNoteTitle');
