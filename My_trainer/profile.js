@@ -706,7 +706,7 @@
             </div>
 
             <div class="lt-prof-card">
-                   '<div class="lt-prof-card-title" style="cursor:pointer;" onclick="openSocialListPage(\'friends\', \'all\')" title="Открыть страницу друзей">Друзья <span style="color:#9ea4b0; font-weight:400;">(' + p.friends.length + ')</span></div>' +
+                  <div class="lt-prof-card-title" style="cursor:pointer;" onclick="openSocialListPage('friends', 'all')" title="Открыть страницу друзей">Друзья <span style="color:#9ea4b0; font-weight:400;">(${p.friends.length})</span></div>
               <div class="lt-prof-friends-grid">
                 ` + p.friends.map(function (f) {
                   return '<div class="lt-prof-friend-item" title="' + f.name + ' — ' + f.lang + '">' +
@@ -787,7 +787,7 @@
             </div>
 
             <div class="lt-prof-card">
-                     '<div class="lt-prof-card-title" style="cursor:pointer;" onclick="openCommunitiesPage(\'all\')" title="Открыть каталог сообществ">Сообщества по интересам</div>' +
+                    <div class="lt-prof-card-title" style="cursor:pointer;" onclick="openCommunitiesPage('all')" title="Открыть каталог сообществ">Сообщества по интересам</div>
               ` + p.communities.map(function (cm) {
                 return '<div class="lt-prof-side-item">' +
                   '<div class="lt-mini-ava" style="border-color:rgba(220,38,38,0.45); color:#f87171;">#</div>' +
