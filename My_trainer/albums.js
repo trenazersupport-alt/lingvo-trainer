@@ -306,15 +306,94 @@
     alert('Фотография «' + photo.title + '» отправлена в диалог с ' + userName + '!');
   };
 
-  window.ltCreateNewAlbum = function () {
+    window.ltCreateNewAlbum = function () {
     const inp = document.getElementById('ltNewAlbumTitleInput');
     if (!inp || !inp.value.trim()) return;
     const data = loadAlbumsData();
-    data.albums.unshift({ id: 'alb_' + Date.now(), title: inp.value.trim() });
+    data.albums.unshift({ id: 'alb_' + Date.now(), title: inp.value.trim(), privacy: 'public' });
     saveAlbumsData(data);
     window._ltAlbumsState.activeModal = null;
     if (typeof render === 'function') render();
   };
+
+  window.openAlbumContextMenu = function (e, albumId) {
+    const isSelf = !window._ltProfileState || window._ltProfileState.viewMode === 'self';
+    if (!isSelf) return;
+    e.preventDefault();
+    e.stopPropagation();
+    closePhotoContextMenu();
+
+    const data = loadAlbumsData();
+    const alb = data.albums.find(x => x.id === albumId);
+    if (!alb) return;
+
+    const menu = document.createElement('div');
+    menu.id = 'ltPhotoCtxMenu';
+    menu.className = 'lt-ctx-menu';
+    menu.innerHTML =
+      '<button onclick="ltAlbumAction(\'hidden\', \'' + albumId + '\')">' + (alb.privacy === 'hidden' ? '✓ Скрыт (сделать публичным)' : 'Скрыть') + '</button>' +
+      '<button onclick="ltAlbumAction(\'friends\', \'' + albumId + '\')">' + (alb.privacy === 'friends' ? '✓ Только для друзей (снять)' : 'Только для друзей') + '</button>' +
+      '<button style="color:#ff8787;" onclick="ltAlbumAction(\'delete\', \'' + albumId + '\')">Удалить альбом</button>';
+
+    document.body.appendChild(menu);
+    const maxX = window.innerWidth - 220;
+    const maxY = window.innerHeight - 160;
+    menu.style.left = Math.max(8, Math.min(e.clientX, maxX)) + 'px';
+    menu.style.top = Math.max(8, Math.min(e.clientY, maxY)) + 'px';
+  };
+
+  window.ltAlbumAction = function (action, albumId) {
+    closePhotoContextMenu();
+    const data = loadAlbumsData();
+    const alb = data.albums.find(x => x.id === albumId);
+    if (!alb) return;
+
+    if (action === 'hidden') {
+      alb.privacy = alb.privacy === 'hidden' ? 'public' : 'hidden';
+      saveAlbumsData(data);
+      if (typeof render === 'function') render();
+      return;
+    }
+
+    if (action === 'friends') {
+      alb.privacy = alb.privacy === 'friends' ? 'public' : 'friends';
+      saveAlbumsData(data);
+      if (typeof render === 'function') render();
+      return;
+    }
+
+    if (action === 'delete') {
+      if (!confirm('Удалить альбом «' + alb.title + '» и все фотографии внутри него?')) return;
+      data.albums = data.albums.filter(x => x.id !== albumId);
+      data.photos = data.photos.filter(p => p.albumId !== albumId);
+      if (window._ltAlbumsState.selectedAlbumId === albumId) {
+        window._ltAlbumsState.selectedAlbumId = 'all';
+      }
+      saveAlbumsData(data);
+      if (typeof render === 'function') render();
+    }
+  };
+
+  function compressImageDataUrl(dataUrl, callback) {
+    const img = new Image();
+    img.onload = function () {
+      const maxSide = 900;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxSide || h > maxSide) {
+        if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+        else { w = Math.round(w * maxSide / h); h = maxSide; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = function () { callback(dataUrl); };
+    img.src = dataUrl;
+  }
 
   window.ltUploadNewPhoto = function () {
     const titleInp = document.getElementById('ltUploadPhotoTitle');
@@ -341,10 +420,13 @@
       if (typeof render === 'function') render();
     }
 
-    if (fileInp && fileInp.files && fileInp.files.at(0)) {
+    const pickedFile = (fileInp && fileInp.files && fileInp.files.length > 0) ? fileInp.files.item(0) : null;
+    if (pickedFile) {
       const reader = new FileReader();
-      reader.onload = function (ev) { finishSave(ev.target.result); };
-      reader.readAsDataURL(fileInp.files.at(0));
+      reader.onload = function (ev) {
+        compressImageDataUrl(ev.target.result, finishSave);
+      };
+      reader.readAsDataURL(pickedFile);
     } else {
       finishSave(urlInp ? urlInp.value.trim() : '');
     }
@@ -461,10 +543,19 @@
       })
       .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
 
-    const maxOffset = Math.max(0, data.albums.length - 4);
+      const visibleAlbums = data.albums.filter(function (alb) {
+      if (isSelf) return true;
+      if (alb.privacy === 'hidden') return false;
+      if (alb.privacy === 'friends') {
+        return window._ltProfileState && window._ltProfileState.guestFriendStatus === 'friend';
+      }
+      return true;
+    });
+
+    const maxOffset = Math.max(0, visibleAlbums.length - 4);
     if (st.carouselOffset > maxOffset) st.carouselOffset = maxOffset;
     if (st.carouselOffset < 0) st.carouselOffset = 0;
-    const shownAlbums = data.albums.slice(st.carouselOffset, st.carouselOffset + 4);
+    const shownAlbums = visibleAlbums.slice(st.carouselOffset, st.carouselOffset + 4);
 
     const topRowPhotos = visiblePhotos.slice(0, 3);
     const bottomRowPhotos = visiblePhotos.slice(3);
@@ -506,7 +597,7 @@
             ' onclick="window._ltAlbumsState.carouselOffset--; render();">«</button>' +
           '<div class="lt-alb-cards-grid">' +
             shownAlbums.map(function (alb) {
-                            const albumPhotos = data.photos
+              const albumPhotos = data.photos
                 .filter(function (x) { return x.albumId === alb.id && (isSelf || !x.hidden); })
                 .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
               const lastPh = albumPhotos.at(0);
@@ -514,12 +605,16 @@
                 ? (lastPh.image ? 'background-image:url(\'' + lastPh.image + '\'); background-size:cover; background-position:center;' : 'background:' + lastPh.color + ';')
                 : 'background:linear-gradient(135deg,#181a24,#261216);';
               const isSelected = st.selectedAlbumId === alb.id;
+              const privBadge = (isSelf && alb.privacy === 'hidden')
+                ? '<span style="color:#f87171; font-size:0.68rem;">[Скрыт]</span>'
+                : ((isSelf && alb.privacy === 'friends') ? '<span style="color:#fbbf24; font-size:0.68rem;">[Друзья]</span>' : '');
 
               return '<div class="lt-alb-card ' + (isSelected ? 'is-active' : '') + '"' +
                 ' style="' + coverBg + '"' +
+                ' oncontextmenu="openAlbumContextMenu(event, \'' + alb.id + '\')"' +
                 ' onclick="window._ltAlbumsState.selectedAlbumId = (window._ltAlbumsState.selectedAlbumId === \'' + alb.id + '\' ? \'all\' : \'' + alb.id + '\'); render();">' +
                 '<div class="lt-alb-card-footer">' +
-                  '<span class="lt-alb-card-title">' + alb.title + '</span>' +
+                  '<span class="lt-alb-card-title">' + alb.title + ' ' + privBadge + '</span>' +
                   '<span class="lt-alb-card-count">' + albumPhotos.length + '</span>' +
                 '</div>' +
               '</div>';
