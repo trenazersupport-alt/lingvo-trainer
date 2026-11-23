@@ -730,9 +730,9 @@ function authSignOut() {
   } else {
     curTab = 'about';
     localStorage.setItem('lt_cur_tab', 'about');
-    if (typeof render === 'function') render();
+       if (typeof render === 'function') render();
   }
-updateAccountUI();
+}
 // РЕЗЕРВНОЕ КОПИРОВАНИЕ СЛОВАРЯ В ФАЙЛ (.JSON)
 function exportBackup() {
   const backupData = {
