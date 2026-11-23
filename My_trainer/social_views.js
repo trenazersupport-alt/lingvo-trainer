@@ -535,7 +535,9 @@
     const st = window._ltHubState;
     let pool = [];
     try {
-      const p = JSON.parse(localStorage.getItem('lt_user_profile_v1') || '{}');
+      const actUser = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
+const pKey = (actUser && actUser.email) ? ('lt_user_profile_v2_' + actUser.email.trim().toLowerCase()) : 'lt_user_profile_v1';
+const p = JSON.parse(localStorage.getItem(pKey) || localStorage.getItem('lt_user_profile_v1') || '{}');
       const s = JSON.parse(localStorage.getItem('lt_social_lists_v1') || '{}');
       pool = (Array.isArray(p.suggestedFriends) ? p.suggestedFriends : []).concat(Array.isArray(s.extraSuggested) ? s.extraSuggested : []);
     } catch (e) {}
