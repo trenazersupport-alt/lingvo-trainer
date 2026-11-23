@@ -3,9 +3,7 @@
   const ADMIN_EMAIL = 'trenazer.support@gmail.com';
   const PROFILE_STORAGE_PREFIX = 'lt_user_profile_v2_';
 
- /* === АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ВСЕХ ЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ В «ВОЗМОЖНЫЕ ДРУЗЬЯ» === */
-(function () {
-  function getCurEmailSafe() {
+  function getCurrentAuthEmail() {
     try {
       if (typeof currentUser !== 'undefined' && currentUser && currentUser.email) {
         return String(currentUser.email).trim().toLowerCase();
@@ -13,107 +11,113 @@
       const act = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
       if (act && act.email) return String(act.email).trim().toLowerCase();
     } catch (e) {}
+    const emailEl = document.getElementById('userEmailLabel');
+    const txt = emailEl ? emailEl.textContent.trim().toLowerCase() : '';
+    if (txt && txt.includes('@')) return txt;
     return '';
   }
 
-  function buildRegisteredSuggestedUsers(curEmail, existingFriendIds) {
-    const result = [];
-    const curPrefix = curEmail ? curEmail.split('@')[0] : '';
-    try {
-      const usersMap = JSON.parse(localStorage.getItem('lt_local_users') || '{}') || {};
-      Object.keys(usersMap).forEach(function (em) {
-        const cleanEm = em.trim().toLowerCase();
-        if (!cleanEm || !cleanEm.includes('@')) return;
-        // Строго исключаем самого себя!
-        if (cleanEm === curEmail || (curPrefix && cleanEm.split('@')[0] === curPrefix)) return;
-
-        const uid = 'reg_' + cleanEm;
-        if (existingFriendIds.has(uid) || existingFriendIds.has(cleanEm)) return;
-
-        let nick = cleanEm.split('@')[0];
-        let handle = '@' + nick.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        let langInfo = 'Изучает корейский и английский';
-        let avatar = '';
-
-        if (cleanEm === 'trenazer.support@gmail.com') {
-          nick = 'Администратор';
-          handle = '@admin_lingvo';
-          langInfo = 'Администрация Lingvo Trainer';
-        }
-
-        try {
-          const profRaw = localStorage.getItem('lt_user_profile_v2_' + cleanEm);
-          if (profRaw) {
-            const pr = JSON.parse(profRaw);
-            if (pr.nick && !(cleanEm.startsWith('test') && pr.nick === 'eketshafor')) nick = pr.nick;
-            if (pr.handle && !(cleanEm.startsWith('test') && pr.handle === '@eketshafor')) handle = pr.handle;
-            if (pr.status) langInfo = pr.status;
-            if (pr.avatar) avatar = pr.avatar;
-          }
-        } catch (e) {}
-
-        result.push({
-          id: uid,
-          email: cleanEm,
-          name: nick,
-          handle: handle,
-          lang: langInfo,
-          avatar: avatar,
-          isRegistered: true
-        });
-      });
-    } catch (e) {}
-    return result;
-  }
-
-  function syncRegisteredUsersIntoSuggested() {
-    const curEmail = getCurEmailSafe();
-    if (!curEmail) return;
-
-    const profKey = 'lt_user_profile_v2_' + curEmail;
-    let prof = null;
-    try {
-      const raw = localStorage.getItem(profKey);
-      if (raw) prof = JSON.parse(raw);
-    } catch (e) {}
-    if (!prof) return;
-
-    const friendsArr = Array.isArray(prof.friends) ? prof.friends : [];
-    const friendIds = new Set(friendsArr.map(function (f) { return String(f.id || f.email || ''); }));
-
-    const regUsers = buildRegisteredSuggestedUsers(curEmail, friendIds);
-    const baseSug = Array.isArray(prof.suggestedFriends) ? prof.suggestedFriends : [];
-
-    const curPrefix = curEmail.split('@')[0];
-    const nonRegSug = baseSug.filter(function (s) {
-      const sId = String(s.id || '');
-      const sEmail = String(s.email || '').toLowerCase();
-      const sName = String(s.name || '').toLowerCase();
-      if (s.isRegistered || sId.startsWith('reg_')) return false;
-      if (sEmail === curEmail || (curPrefix && sEmail.split('@')[0] === curPrefix)) return false;
-      if (curPrefix && sName === curPrefix) return false;
-      if (friendIds.has(sId)) return false;
-      return true;
-    });
-
-    prof.suggestedFriends = regUsers.concat(nonRegSug);
-    try {
-      localStorage.setItem(profKey, JSON.stringify(prof));
-    } catch (e) {}
-  }
-
-  syncRegisteredUsersIntoSuggested();
-  const _prevRenderSyncUsers = window.render;
-  window.render = function () {
-    syncRegisteredUsersIntoSuggested();
-    return typeof _prevRenderSyncUsers === 'function' ? _prevRenderSyncUsers() : undefined;
+  window.isPlatformAdmin = function () {
+    return getCurrentAuthEmail() === ADMIN_EMAIL;
   };
-})();
 
-  function saveProfile(data) {
+  function getProfileStorageKey() {
+    const email = getCurrentAuthEmail();
+    return email ? (PROFILE_STORAGE_PREFIX + email) : (PROFILE_STORAGE_PREFIX + 'guest');
+  }
+
+  function getDefaultProfile() {
+    const rawEmail = getCurrentAuthEmail();
+    const isAdmin = rawEmail === ADMIN_EMAIL;
+    const baseNick = isAdmin
+      ? 'Администратор'
+      : (rawEmail && rawEmail.includes('@') ? rawEmail.split('@')[0] : 'Ученик');
+
+    return {
+      email: rawEmail,
+      isAdmin: isAdmin,
+      nick: baseNick,
+      handle: '@' + (isAdmin ? 'admin_lingvo' : baseNick.toLowerCase().replace(/[^a-z0-9_]/g, '') || 'user'),
+      status: isAdmin ? 'Официальный аккаунт администрации Lingvo Trainer' : 'Изучаю корейский и английский каждый день',
+      birthday: isAdmin ? '' : '14 мая 1998',
+      showBirthday: !isAdmin,
+      city: 'Владимир, Россия',
+      showCity: true,
+      avatar: '',
+      cover: '',
+      coverPosY: 50,
+      followers: 0,
+      streakDays: 1,
+      friends: [],
+      suggestedFriends: [
+        { id: 'u_jihoon', name: 'Джихун Ли', handle: '@jihoon_study', lang: 'Носитель KO • Ищет обмен' },
+        { id: 'u_daria', name: 'Дарья С.', handle: '@daria_hangul', lang: 'Корейский A1 • TOPIK I' },
+        { id: 'u_mark', name: 'Марк Т.', handle: '@mark_vocab', lang: 'Английский C1' }
+      ],
+      communities: [
+        { id: 'c_topik', title: 'Подготовка к TOPIK I–II', members: '1 420 участников' },
+        { id: 'c_hanja', title: 'Корни слов и Ханча', members: '860 участников' },
+        { id: 'c_speaking', title: 'Разговорный клуб KO / EN', members: '2 190 участников' }
+      ],
+      photos: [],
+      notes: [
+        { id: 'n1', title: 'Разница между 은/는 и 이/가', text: '은/는 выделяет тему или противопоставление, 이/가 — новое действие или субъект.' }
+      ],
+      savedLinks: [
+        { id: 'l1', title: 'Словарь Naver Korean-Russian', url: 'https://naver.com' }
+      ],
+      posts: [
+        {
+          id: 'post_1',
+          authorName: baseNick,
+          time: 'Сегодня',
+          text: isAdmin
+            ? 'Добро пожаловать на платформу Lingvo Trainer! По вопросам работы сайта: trenazer.support@gmail.com'
+            : 'Начал обучение на платформе Lingvo Trainer!',
+          wordTag: '사랑 (саран) — любовь'
+        }
+      ]
+    };
+  }
+
+  function loadProfile() {
+    const key = getProfileStorageKey();
+    const email = getCurrentAuthEmail();
+    const isAdmin = email === ADMIN_EMAIL;
+    const isEketOwner = email.startsWith('eketshafor');
+
     try {
-      localStorage.setItem(getProfileStorageKey(), JSON.stringify(data));
-    } catch (e) {}
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        let def = getDefaultProfile();
+        // Переносим старые данные из v1 ТОЛЬКО владельцу eketshafor, чтобы чужие аккаунты не копировали его профиль!
+        if (isEketOwner) {
+          try {
+            const legacyRaw = localStorage.getItem('lt_user_profile_v1');
+            if (legacyRaw) {
+              const legacy = JSON.parse(legacyRaw);
+              def = Object.assign(def, legacy, { email: email, isAdmin: isAdmin });
+            }
+          } catch (e) {}
+        }
+        saveProfile(def);
+        return def;
+      }
+
+      const parsed = Object.assign(getDefaultProfile(), JSON.parse(raw));
+      // Если это аккаунт test, которому ранее ошибочно скопировался ник eketshafor — очищаем его до чистого профиля test
+      if (!isEketOwner && parsed.nick === 'eketshafor') {
+        const cleanDef = getDefaultProfile();
+        saveProfile(cleanDef);
+        return cleanDef;
+      }
+
+      parsed.email = email;
+      parsed.isAdmin = isAdmin;
+      return parsed;
+    } catch (e) {
+      return getDefaultProfile();
+    }
   }
 
   window._ltProfileState = {
