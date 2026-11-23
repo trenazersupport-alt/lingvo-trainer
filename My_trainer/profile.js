@@ -112,10 +112,6 @@
       parsed.email = email;
       parsed.isAdmin = isAdmin;
       return parsed;
-      const parsed = Object.assign(getDefaultProfile(), JSON.parse(raw));
-      parsed.email = email;
-      parsed.isAdmin = isAdmin;
-      return parsed;
     } catch (e) {
       return getDefaultProfile();
     }
