@@ -552,18 +552,39 @@ function updateAccountUI() {
   }
 }
 
-function authSignUp() {
+async function hashSecretStr(str) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(str)));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return 'plain_' + String(str);
+  }
+}
+
+let _loginFailCount = 0;
+let _loginLockUntil = 0;
+
+function toggleForgotPasswordBox() {
+  const b = document.getElementById('authForgotBox');
+  if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
+}
+
+async function authSignUp() {
   const email = document.getElementById('authEmail').value.trim().toLowerCase();
   const password = document.getElementById('authPassword').value.trim();
+  const secretWord = (document.getElementById('authSecretWord')?.value || '').trim().toLowerCase();
   if (!email || !email.includes('@') || password.length < 6) {
     return setAuthMsg('Введите корректную почту и пароль (от 6 символов)', true);
   }
   if (localUsers[email]) {
     return setAuthMsg('Этот Email уже зарегистрирован. Нажмите «Войти».', true);
   }
+  const passwordHash = await hashSecretStr(password);
+  const secretHash = secretWord ? await hashSecretStr(secretWord) : '';
   localUsers[email] = {
     email,
-    password,
+    passwordHash,
+    secretHash,
     learnedIds: [...learnedIds],
     personalIds: [...personalIds],
     customWords: JSON.parse(JSON.stringify(customWords))
@@ -572,16 +593,39 @@ function authSignUp() {
   currentUser = { email };
   localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
   updateAccountUI();
+  render();
   setAuthMsg('');
 }
 
-function authSignIn() {
+async function authSignIn() {
+  if (Date.now() < _loginLockUntil) {
+    const sec = Math.ceil((_loginLockUntil - Date.now()) / 1000);
+    return setAuthMsg('Слишком много попыток. Повторите через ' + sec + ' сек.', true);
+  }
   const email = document.getElementById('authEmail').value.trim().toLowerCase();
   const password = document.getElementById('authPassword').value.trim();
   const acc = localUsers[email];
-  if (!acc || acc.password !== password) {
+  const inputHash = await hashSecretStr(password);
+  const valid = acc && (acc.passwordHash ? acc.passwordHash === inputHash : acc.password === password);
+
+  if (!valid) {
+    _loginFailCount++;
+    if (_loginFailCount >= 5) {
+      _loginLockUntil = Date.now() + 30000;
+      _loginFailCount = 0;
+      return setAuthMsg('Превышено число попыток. Вход заблокирован на 30 сек.', true);
+    }
     return setAuthMsg('Неверная почта или пароль (или аккаунт ещё не создан)', true);
   }
+
+  _loginFailCount = 0;
+  // Плавно обновляем старый открытый пароль на SHA-256 хэш
+  if (!acc.passwordHash) {
+    acc.passwordHash = inputHash;
+    delete acc.password;
+    localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  }
+
   learnedIds = acc.learnedIds || [];
   personalIds = acc.personalIds || [];
   customWords = acc.customWords || { ko: [], en: [] };
@@ -595,12 +639,84 @@ function authSignIn() {
   setAuthMsg('');
 }
 
+async function authResetPassword() {
+  const email = (document.getElementById('forgotEmailInp')?.value || '').trim().toLowerCase();
+  const secret = (document.getElementById('forgotSecretInp')?.value || '').trim().toLowerCase();
+  const newPass = (document.getElementById('forgotNewPassInp')?.value || '').trim();
+  const acc = localUsers[email];
+  if (!acc) return setAuthMsg('Аккаунт с такой почтой не найден', true);
+  if (newPass.length < 6) return setAuthMsg('Новый пароль должен быть не короче 6 символов', true);
+  if (acc.secretHash) {
+    const sHash = await hashSecretStr(secret);
+    if (sHash !== acc.secretHash) return setAuthMsg('Неверное кодовое слово восстановления', true);
+  }
+  acc.passwordHash = await hashSecretStr(newPass);
+  delete acc.password;
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  setAuthMsg('Пароль успешно обновлён! Теперь войдите с новым паролем.', false);
+  const fBox = document.getElementById('authForgotBox');
+  if (fBox) fBox.style.display = 'none';
+}
+
+async function authChangePassword() {
+  const msgEl = document.getElementById('authUserMsg');
+  if (!currentUser || !localUsers[currentUser.email]) return;
+  const oldP = (document.getElementById('oldPassInp')?.value || '').trim();
+  const newP = (document.getElementById('newPassInp')?.value || '').trim();
+  const acc = localUsers[currentUser.email];
+  const oldHash = await hashSecretStr(oldP);
+  const ok = acc.passwordHash ? acc.passwordHash === oldHash : acc.password === oldP;
+  if (!ok) { if (msgEl) { msgEl.style.color = '#ff8787'; msgEl.textContent = 'Неверный текущий пароль'; } return; }
+  if (newP.length < 6) { if (msgEl) { msgEl.style.color = '#ff8787'; msgEl.textContent = 'Новый пароль должен быть от 6 символов'; } return; }
+  acc.passwordHash = await hashSecretStr(newP);
+  delete acc.password;
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+  if (msgEl) { msgEl.style.color = '#2ecc71'; msgEl.textContent = '✓ Пароль успешно изменён'; }
+  document.getElementById('oldPassInp').value = '';
+  document.getElementById('newPassInp').value = '';
+}
+
+async function authChangeEmail() {
+  const msgEl = document.getElementById('authUserMsg');
+  if (!currentUser || !localUsers[currentUser.email]) return;
+  const oldEmail = currentUser.email;
+  const newEmail = (document.getElementById('newEmailInp')?.value || '').trim().toLowerCase();
+  const pass = (document.getElementById('confirmPassForEmailInp')?.value || '').trim();
+  if (!newEmail || !newEmail.includes('@')) { if (msgEl) { msgEl.style.color = '#ff8787'; msgEl.textContent = 'Введите корректный новый Email'; } return; }
+  if (localUsers[newEmail]) { if (msgEl) { msgEl.style.color = '#ff8787'; msgEl.textContent = 'Этот Email уже занят'; } return; }
+  const acc = localUsers[oldEmail];
+  const pHash = await hashSecretStr(pass);
+  const ok = acc.passwordHash ? acc.passwordHash === pHash : acc.password === pass;
+  if (!ok) { if (msgEl) { msgEl.style.color = '#ff8787'; msgEl.textContent = 'Неверный пароль подтверждения'; } return; }
+
+  // Переносим аккаунт и профиль на новый Email
+  acc.email = newEmail;
+  localUsers[newEmail] = acc;
+  delete localUsers[oldEmail];
+  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
+
+  const oldProf = localStorage.getItem('lt_user_profile_v2_' + oldEmail);
+  if (oldProf) {
+    localStorage.setItem('lt_user_profile_v2_' + newEmail, oldProf);
+    localStorage.removeItem('lt_user_profile_v2_' + oldEmail);
+  }
+
+  currentUser = { email: newEmail };
+  localStorage.setItem('lt_active_user', JSON.stringify(currentUser));
+  updateAccountUI();
+  render();
+  if (msgEl) { msgEl.style.color = '#2ecc71'; msgEl.textContent = '✓ Email успешно обновлён на ' + newEmail; }
+}
+
 function authSignOut() {
   syncToCloud(false);
   currentUser = null;
   localStorage.removeItem('lt_active_user');
   updateAccountUI();
   setAuthMsg('');
+  if (typeof closeModal === 'function') closeModal('accountModal');
+  if (typeof switchTab === 'function') switchTab('home');
+  else { window.curTab = 'home'; render(); }
 }
 
 function syncToCloud(showAlert = false) {
