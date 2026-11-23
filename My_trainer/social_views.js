@@ -318,18 +318,30 @@
           }
         });
       }
-           if (!pool.length && typeof getAllWords === 'function') {
-        const savedLang = (typeof curLang !== 'undefined' && curLang) ? curLang : 'ko';
-        ['ko', 'en'].forEach(function (lc) {
-          if (typeof setLang === 'function') setLang(lc);
-          const part = getAllWords() || [];
-          part.forEach(function (w) {
-            if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
-              pool.push(Object.assign({ lang: lc }, w));
-            }
-          });
+             if (!pool.length) {
+        if (typeof getAllWords === 'function') {
+          (getAllWords() || []).forEach(function (w) { pool.push(w); });
+        }
+        [window.WORDS, window.KO_WORDS, window.EN_WORDS, window.DICT_KO, window.DICT_EN].forEach(function (src, idx) {
+          const fallbackLang = (idx === 2 || idx === 4) ? 'en' : 'ko';
+          if (Array.isArray(src)) {
+            src.forEach(function (w) {
+              if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
+                pool.push(Object.assign({ lang: fallbackLang }, w));
+              }
+            });
+          } else if (src && typeof src === 'object') {
+            Object.keys(src).forEach(function (k) {
+              if (Array.isArray(src[k])) {
+                src[k].forEach(function (w) {
+                  if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
+                    pool.push(Object.assign({ lang: fallbackLang }, w));
+                  }
+                });
+              }
+            });
+          }
         });
-        if (typeof setLang === 'function') setLang(savedLang);
       }
       pool.forEach(function (w) {
         if (w && learnedSet.has(String(w.id))) {
