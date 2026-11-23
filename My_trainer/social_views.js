@@ -681,3 +681,102 @@ document.addEventListener('click', function (e) {
     }
   }
 }, true);
+/* === АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ВСЕХ ЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ В «ВОЗМОЖНЫЕ ДРУЗЬЯ» === */
+(function () {
+  function getCurEmailSafe() {
+    const lbl = document.getElementById('userEmailLabel');
+    const txt = lbl ? lbl.textContent.trim().toLowerCase() : '';
+    if (txt && txt.includes('@')) return txt;
+    try {
+      const act = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
+      if (act && act.email) return act.email.trim().toLowerCase();
+    } catch (e) {}
+    return '';
+  }
+
+  function buildRegisteredSuggestedUsers(curEmail, existingFriendIds) {
+    const result = [];
+    try {
+      const usersMap = JSON.parse(localStorage.getItem('lt_local_users') || '{}') || {};
+      Object.keys(usersMap).forEach(function (em) {
+        const cleanEm = em.trim().toLowerCase();
+        if (!cleanEm || !cleanEm.includes('@')) return;
+        if (cleanEm === curEmail) return; // Не показываем самого себя
+
+        const uid = 'reg_' + cleanEm;
+        if (existingFriendIds.has(uid) || existingFriendIds.has(cleanEm)) return;
+
+        let nick = cleanEm.split('@').at(0);
+        let handle = '@' + nick.toLowerCase().replace(/[^a-z0-9_]/g, '');
+        let langInfo = 'Изучает корейский и английский';
+        let avatar = '';
+
+        if (cleanEm === 'trenazer.support@gmail.com') {
+          nick = 'Администратор';
+          handle = '@admin_lingvo';
+          langInfo = 'Администрация Lingvo Trainer';
+        }
+
+        try {
+          const profRaw = localStorage.getItem('lt_user_profile_v2_' + cleanEm);
+          if (profRaw) {
+            const pr = JSON.parse(profRaw);
+            if (pr.nick) nick = pr.nick;
+            if (pr.handle) handle = pr.handle;
+            if (pr.status) langInfo = pr.status;
+            if (pr.avatar) avatar = pr.avatar;
+          }
+        } catch (e) {}
+
+        result.push({
+          id: uid,
+          email: cleanEm,
+          name: nick,
+          handle: handle,
+          lang: langInfo,
+          avatar: avatar,
+          isRegistered: true
+        });
+      });
+    } catch (e) {}
+    return result;
+  }
+
+  function syncRegisteredUsersIntoSuggested() {
+    const curEmail = getCurEmailSafe();
+    if (!curEmail) return;
+
+    const profKey = 'lt_user_profile_v2_' + curEmail;
+    let prof = null;
+    try {
+      const raw = localStorage.getItem(profKey);
+      if (raw) prof = JSON.parse(raw);
+    } catch (e) {}
+    if (!prof) return;
+
+    const friendsArr = Array.isArray(prof.friends) ? prof.friends : [];
+    const friendIds = new Set(friendsArr.map(function (f) { return String(f.id || f.email || ''); }));
+
+    const regUsers = buildRegisteredSuggestedUsers(curEmail, friendIds);
+    const baseSug = Array.isArray(prof.suggestedFriends) ? prof.suggestedFriends : [];
+
+    // Убираем устаревшие записи зарегистрированных пользователей и добавляем актуальных в начало списка
+    const nonRegSug = baseSug.filter(function (s) {
+      return !s.isRegistered && !String(s.id || '').startsWith('reg_') && !friendIds.has(String(s.id));
+    });
+
+    const merged = regUsers.concat(nonRegSug);
+    if (JSON.stringify(merged) !== JSON.stringify(baseSug)) {
+      prof.suggestedFriends = merged;
+      try { localStorage.setItem(profKey, JSON.stringify(prof)); } catch (e) {}
+    }
+  }
+
+  // Запускаем синхронизацию при загрузке и перед каждой отрисовкой экрана
+  syncRegisteredUsersIntoSuggested();
+  const _prevRenderSyncUsers = window.render;
+  window.render = function () {
+    syncRegisteredUsersIntoSuggested();
+    return typeof _prevRenderSyncUsers === 'function' ? _prevRenderSyncUsers() : undefined;
+  };
+})();
