@@ -160,15 +160,15 @@
   </div>
 
   <!— МОДАЛЬНОЕ ОКНО: АККАУНТ И ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ —>
-  <div class="modal-overlay" id="accountModal">
-    <div class="modal-box">
+   <div class="modal-overlay" id="accountModal">
+    <div class="modal-box" style="max-width:460px;">
       <div class="modal-header">
-        <h3> Аккаунт и облако</h3>
-        <button class="close-modal" onclick="closeModal('accountModal')">×</button>
+        <h3>Аккаунт и безопасность</h3>
+        <button class="close-modal" onclick="closeModal('accountModal')">✕</button>
       </div>
       <div id="authGuestBox">
-        <p style="color:#bbb; font-size:0.9rem; margin-bottom:12px;">
-          Войдите или зарегистрируйтесь, чтобы ваши выученные слова и личный словарь сохранялись в облаке на любом устройстве.
+        <p style="color:#b8bec9; font-size:0.88rem; margin-bottom:12px;">
+          Войдите или зарегистрируйтесь, чтобы сохранить изученные слова, личный словарь и настройки профиля.
         </p>
         <div class="form-group">
           <label>Электронная почта (Email):</label>
@@ -176,26 +176,63 @@
         </div>
         <div class="form-group">
           <label>Пароль (минимум 6 символов):</label>
-          <input type="password" id="authPassword" class="input-dark" placeholder="••••••" />
+          <div style="display:flex; gap:6px;">
+            <input type="password" id="authPassword" class="input-dark" placeholder="••••••" style="flex:1;" />
+            <button type="button" class="btn-secondary" style="padding:0 10px;" onclick="const p=document.getElementById('authPassword'); p.type=p.type==='password'?'text':'password';" title="Показать/скрыть пароль">👁</button>
+          </div>
         </div>
-        <div id="authMsg" style="font-size:0.85rem; margin-bottom:10px; color:#ffb84d;"></div>
-        <div style="display:flex; gap:10px;">
+        <div class="form-group" id="authRecoveryPhraseWrap">
+          <label>Кодовое слово для восстановления пароля:</label>
+          <input type="text" id="authSecretWord" class="input-dark" placeholder="Например: любимый город или питомец" />
+        </div>
+        <div id="authMsg" style="font-size:0.84rem; margin-bottom:10px; color:#ff8787;"></div>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
           <button class="btn-primary" style="flex:1;" onclick="authSignIn()">Войти</button>
           <button class="btn-secondary" style="flex:1;" onclick="authSignUp()">Регистрация</button>
         </div>
+        <div style="text-align:right;">
+          <button type="button" style="background:none; border:none; color:#9ea4b0; font-size:0.8rem; cursor:pointer; text-decoration:underline;" onclick="toggleForgotPasswordBox()">Забыли пароль?</button>
+        </div>
+        <div id="authForgotBox" style="display:none; margin-top:12px; padding:12px; background:rgba(10,11,15,0.85); border:1px solid rgba(220,38,38,0.45);">
+          <div style="font-weight:700; color:#fff; font-size:0.86rem; margin-bottom:8px;">Восстановление доступа</div>
+          <input type="email" id="forgotEmailInp" class="input-dark" placeholder="Ваш Email" style="margin-bottom:8px;" />
+          <input type="text" id="forgotSecretInp" class="input-dark" placeholder="Кодовое слово при регистрации" style="margin-bottom:8px;" />
+          <input type="password" id="forgotNewPassInp" class="input-dark" placeholder="Новый пароль (от 6 символов)" style="margin-bottom:8px;" />
+          <button class="btn-primary" style="width:100%;" onclick="authResetPassword()">Сбросить и установить новый пароль</button>
+        </div>
       </div>
 
-            <div id="authUserBox" style="display:none;">
-        <div style="background:#121218; padding:12px; border-radius:10px; border:1px solid #2ecc71; margin-bottom:14px;">
-          <div style="color:#2ecc71; font-weight:600;">✅ Профиль активен</div>
-          <div id="userEmailLabel" style="color:#fff; margin-top:4px; font-size:0.95rem;"></div>
+      <div id="authUserBox" style="display:none;">
+        <div style="background:#121318; padding:12px; border:1px solid #2ecc71; margin-bottom:12px;">
+          <div style="color:#2ecc71; font-weight:600; font-size:0.86rem;">✓ Учётная запись активна</div>
+          <div id="userEmailLabel" style="color:#fff; margin-top:4px; font-size:0.95rem; font-weight:700;"></div>
         </div>
-        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="exportBackup()">📥 Скачать резервную копию (.json)</button>
-        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="document.getElementById('backupFileInput').click()">📤 Восстановить из файла</button>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+          <button class="btn-secondary" style="width:100%;" onclick="const b=document.getElementById('changePassBox'); b.style.display=b.style.display==='none'?'block':'none';">Сменить пароль</button>
+          <div id="changePassBox" style="display:none; padding:10px; background:rgba(10,11,15,0.85); border:1px solid rgba(255,255,255,0.14);">
+            <input type="password" id="oldPassInp" class="input-dark" placeholder="Текущий пароль" style="margin-bottom:6px;" />
+            <input type="password" id="newPassInp" class="input-dark" placeholder="Новый пароль (от 6 символов)" style="margin-bottom:8px;" />
+            <button class="btn-primary" style="width:100%; padding:6px;" onclick="authChangePassword()">Сохранить новый пароль</button>
+          </div>
+
+          <button class="btn-secondary" style="width:100%;" onclick="const b=document.getElementById('changeEmailBox'); b.style.display=b.style.display==='none'?'block':'none';">Изменить Email</button>
+          <div id="changeEmailBox" style="display:none; padding:10px; background:rgba(10,11,15,0.85); border:1px solid rgba(255,255,255,0.14);">
+            <input type="email" id="newEmailInp" class="input-dark" placeholder="Новый адрес почты" style="margin-bottom:6px;" />
+            <input type="password" id="confirmPassForEmailInp" class="input-dark" placeholder="Подтвердите паролем" style="margin-bottom:8px;" />
+            <button class="btn-primary" style="width:100%; padding:6px;" onclick="authChangeEmail()">Обновить Email</button>
+          </div>
+        </div>
+
+        <div id="authUserMsg" style="font-size:0.82rem; margin-bottom:10px; color:#ff8787;"></div>
+
+        <button class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="exportBackup()">Скачать резервную копию (.json)</button>
+        <button class="btn-secondary" style="width:100%; margin-bottom:10px;" onclick="document.getElementById('backupFileInput').click()">Восстановить из файла</button>
         <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="importBackup(event)" />
         <button class="btn-primary" style="width:100%;" onclick="authSignOut()">Выйти из аккаунта</button>
       </div>
     </div>
+  </div>
   <!— МОДАЛЬНОЕ ОКНО: СООБЩИТЬ ОБ ОШИБКЕ / ПОДДЕРЖКА —>
   <div class="modal-overlay" id="reportModal">
     <div class="modal-box">
