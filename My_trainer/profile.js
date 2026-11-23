@@ -1,30 +1,51 @@
-/* === МОДУЛЬ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ (profile.js) === */
+/* === МОДУЛЬ ПРОФИЛЯ ПОЛЬЗОВАТЕЛЯ И АДМИНИСТРАТОРА (profile.js) === */
 (function () {
-  const PROFILE_STORAGE_KEY = 'lt_user_profile_v1';
+  const ADMIN_EMAIL = 'trenazer.support@gmail.com';
+  const PROFILE_STORAGE_PREFIX = 'lt_user_profile_v2_';
+
+  function getCurrentAuthEmail() {
+    const emailEl = document.getElementById('userEmailLabel');
+    const txt = emailEl ? emailEl.textContent.trim().toLowerCase() : '';
+    if (txt && txt.includes('@')) return txt;
+    try {
+      const saved = (localStorage.getItem('lt_auth_email') || localStorage.getItem('userEmail') || '').trim().toLowerCase();
+      if (saved && saved.includes('@')) return saved;
+    } catch (e) {}
+    return '';
+  }
+
+  window.isPlatformAdmin = function () {
+    return getCurrentAuthEmail() === ADMIN_EMAIL;
+  };
+
+  function getProfileStorageKey() {
+    const email = getCurrentAuthEmail();
+    return email ? (PROFILE_STORAGE_PREFIX + email) : (PROFILE_STORAGE_PREFIX + 'guest');
+  }
 
   function getDefaultProfile() {
-    const emailEl = document.getElementById('userEmailLabel');
-    const rawEmail = emailEl ? emailEl.textContent.trim() : '';
-    const baseNick = rawEmail && rawEmail.includes('@') ? rawEmail.split('@').at(0) : 'ekstshafor';
+    const rawEmail = getCurrentAuthEmail();
+    const isAdmin = rawEmail === ADMIN_EMAIL;
+    const baseNick = isAdmin
+      ? 'Администратор'
+      : (rawEmail && rawEmail.includes('@') ? rawEmail.split('@').at(0) : 'Ученик');
 
     return {
+      email: rawEmail,
+      isAdmin: isAdmin,
       nick: baseNick,
-      handle: '@' + baseNick.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-      status: 'Изучаю корейский и английский каждый день',
-      birthday: '14 мая 1998',
-      showBirthday: true,
+      handle: '@' + (isAdmin ? 'admin_lingvo' : baseNick.toLowerCase().replace(/[^a-z0-9_]/g, '') || 'user'),
+      status: isAdmin ? 'Официальный аккаунт администрации Lingvo Trainer' : 'Изучаю корейский и английский каждый день',
+      birthday: isAdmin ? '' : '14 мая 1998',
+      showBirthday: !isAdmin,
       city: 'Владимир, Россия',
       showCity: true,
       avatar: '',
       cover: '',
-      followers: 24,
-      streakDays: 12,
-      friends: [
-        { id: 'u_mina', name: 'Мина Пак', handle: '@minapak', lang: 'Корейский B1', isFriend: true },
-        { id: 'u_alex', name: 'Алексей К.', handle: '@alex_kr', lang: 'Корейский A2', isFriend: true },
-        { id: 'u_soyeon', name: 'Соён Ким', handle: '@soyeon_seoul', lang: 'Носитель KO', isFriend: true },
-        { id: 'u_kate', name: 'Екатерина В.', handle: '@kate_en', lang: 'Английский B2', isFriend: true }
-      ],
+      coverPosY: 50,
+      followers: 0,
+      streakDays: 1,
+      friends: [],
       suggestedFriends: [
         { id: 'u_jihoon', name: 'Джихун Ли', handle: '@jihoon_study', lang: 'Носитель KO • Ищет обмен' },
         { id: 'u_daria', name: 'Дарья С.', handle: '@daria_hangul', lang: 'Корейский A1 • TOPIK I' },
@@ -35,12 +56,7 @@
         { id: 'c_hanja', title: 'Корни слов и Ханча', members: '860 участников' },
         { id: 'c_speaking', title: 'Разговорный клуб KO / EN', members: '2 190 участников' }
       ],
-      photos: [
-        { id: 'p1', title: 'Конспект по ханче', color: 'linear-gradient(135deg,#2a1215,#12131a)', hidden: false },
-        { id: 'p2', title: 'Карточки TOPIK', color: 'linear-gradient(135deg,#1b1e2b,#2d1519)', hidden: false },
-        { id: 'p3', title: 'Вечерняя практика', color: 'linear-gradient(135deg,#241418,#161822)', hidden: false },
-        { id: 'p4', title: 'Словарь глаголов', color: 'linear-gradient(135deg,#191c26,#331418)', hidden: false }
-      ],
+      photos: [],
       notes: [
         { id: 'n1', title: 'Разница между 은/는 и 이/가', text: '은/는 выделяет тему или противопоставление, 이/가 — новое действие или субъект.' }
       ],
@@ -51,8 +67,10 @@
         {
           id: 'post_1',
           authorName: baseNick,
-          time: 'Сегодня в 10:15',
-          text: 'Закрепил сегодня 25 новых слов из раздела «Человек и общение» и повторил базовые ключи ханчи.',
+          time: 'Сегодня',
+          text: isAdmin
+            ? 'Добро пожаловать на платформу Lingvo Trainer! По вопросам работы сайта: trenazer.support@gmail.com'
+            : 'Начал обучение на платформе Lingvo Trainer!',
           wordTag: '사랑 (саран) — любовь'
         }
       ]
@@ -60,10 +78,20 @@
   }
 
   function loadProfile() {
+    const key = getProfileStorageKey();
+    const email = getCurrentAuthEmail();
+    const isAdmin = email === ADMIN_EMAIL;
     try {
-      const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (!raw) return getDefaultProfile();
-      return Object.assign(getDefaultProfile(), JSON.parse(raw));
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        const def = getDefaultProfile();
+        saveProfile(def);
+        return def;
+      }
+      const parsed = Object.assign(getDefaultProfile(), JSON.parse(raw));
+      parsed.email = email;
+      parsed.isAdmin = isAdmin;
+      return parsed;
     } catch (e) {
       return getDefaultProfile();
     }
@@ -71,7 +99,7 @@
 
   function saveProfile(data) {
     try {
-      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(getProfileStorageKey(), JSON.stringify(data));
     } catch (e) {}
   }
 
@@ -80,9 +108,23 @@
     guestFriendStatus: 'none',
     activeSubPanel: null,
     editing: false,
-    addingPost: false
+    addingPost: false,
+    adminPanelOpen: false
   };
+
   window.openUserProfile = function (mode) {
+    const email = getCurrentAuthEmail();
+    // Если пользователь НЕ вошёл в аккаунт — открываем окно Входа / Регистрации вместо профиля!
+    if (!email) {
+      if (typeof openModal === 'function') {
+        openModal('accountModal');
+      } else {
+        const accModal = document.getElementById('accountModal');
+        if (accModal) accModal.style.display = 'flex';
+      }
+      return;
+    }
+
     if (mode) window._ltProfileState.viewMode = mode;
     window._ltProfileState.activeSubPanel = null;
     if (typeof closeModal === 'function') closeModal('accountModal');
@@ -93,7 +135,6 @@
       if (typeof render === 'function') render();
     }
   };
-
   window.toggleProfileSubMenu = function (panel) {
     const menu = document.getElementById('ltProfMoreDropdown');
     if (panel) {
@@ -472,9 +513,15 @@
     render();
   };
   window.renderUserProfileView = function (ws) {
+     if (!getCurrentAuthEmail()) {
+   window.curTab = 'home';
+   if (typeof openModal === 'function') openModal('accountModal');
+   return;
+ }
     const p = loadProfile();
     const st = window._ltProfileState;
     const isSelf = st.viewMode === 'self';
+    const isAdminUser = isSelf && (p.isAdmin || window.isPlatformAdmin());
     const learnedCount = typeof learnedIds !== 'undefined' ? learnedIds.length : 0;
     const visiblePhotos = isSelf ? p.photos : p.photos.filter(ph => !ph.hidden);
          const coverPosY = typeof p.coverPosY === 'number' ? p.coverPosY : 50;
@@ -744,18 +791,31 @@
                   ` + (isSelf ? '<button onclick="window._ltProfileState.editing=true; toggleProfileSubMenu();">Настройки приватности</button>' : '') + `
                 </div>
               </div>
-              ` + rightActionHtml + `
+                     ` + rightActionHtml +
+           (isAdminUser ? '<button class="btn-primary lt-prof-action-btn" onclick="window._ltProfileState.adminPanelOpen = !window._ltProfileState.adminPanelOpen; render();">Панель администратора</button>' : '') +
+           (isSelf ? '<button class="btn-secondary lt-prof-action-btn" onclick="if(typeof openModal===\'function\') openModal(\'accountModal\');">Аккаунт / Выход</button>' : '') + `
             </div>
           </div>
         </div>
 
         ` + editPanelHtml + `
         ` + subPanelHtml + `
-
+     ` + (isAdminUser && st.adminPanelOpen ? (
+       '<div class="lt-prof-card" style="margin-bottom:12px; border-color:rgba(220,38,38,0.65);">' +
+         '<div class="lt-prof-card-title"><span>Панель главного администратора (trenazer.support@gmail.com)</span>' +
+           '<button class="btn-secondary" style="padding:2px 8px; font-size:0.75rem;" onclick="window._ltProfileState.adminPanelOpen=false; render();">Закрыть</button>' +
+         '</div>' +
+         '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+           '<button class="btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="if(typeof openModal===\'function\') openModal(\'addWordModal\');">+ Добавить слово в общую базу</button>' +
+           '<button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="openCommunitiesPage(\'all\')">Управление сообществами</button>' +
+           '<button class="btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="if(typeof openModal===\'function\') openModal(\'rulesModal\')">Правила и модерация (3+1)</button>' +
+         '</div>' +
+       '</div>'
+     ) : '') + `
         <div class="lt-prof-grid">
           <div class="lt-prof-col-left">
             <div class="lt-prof-card">
-              <div class="lt-prof-name">` + p.nick + `</div>
+             <div class="lt-prof-name">` + p.nick + (isAdminUser ? ' <span class="tag" style="background:rgba(220,38,38,0.22); border-color:#dc2626; color:#ff8787; font-size:0.68rem; vertical-align:middle; margin-left:6px;">АДМИНИСТРАТОР</span>' : '') + `</div>
               <div class="lt-prof-handle">` + p.handle + `</div>
               ` + (p.status ? '<div class="lt-prof-status">' + p.status + '</div>' : '') + `
               <div class="lt-prof-info-list">
