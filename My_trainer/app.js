@@ -709,34 +709,32 @@ async function authChangeEmail() {
 }
 
 function authSignOut() {
-  syncToCloud(false);
+  if (typeof syncToCloud === 'function') syncToCloud(false);
   currentUser = null;
   localStorage.removeItem('lt_active_user');
-  updateAccountUI();
-  setAuthMsg('');
+  localStorage.removeItem('lt_auth_email');
+
+  const emailLbl = document.getElementById('userEmailLabel');
+  if (emailLbl) emailLbl.textContent = '';
+
+  const topMenu = document.getElementById('ltTopAccountMenu');
+  if (topMenu) topMenu.remove();
+
+  if (typeof updateAccountUI === 'function') updateAccountUI();
+  if (typeof setAuthMsg === 'function') setAuthMsg('');
   if (typeof closeModal === 'function') closeModal('accountModal');
-  if (typeof switchTab === 'function') switchTab('home');
-  else { window.curTab = 'home'; render(); }
+
+  // Возвращаем строго на главную страницу с 5 карточками
+  document.body.classList.add('is-home');
+  if (typeof goHome === 'function') {
+    goHome();
+  } else {
+    window.curTab = 'home';
+    const brandBtn = document.querySelector('header .brand, header .logo, [onclick*="goHome"], [onclick*="switchTab(\'home\')"]');
+    if (brandBtn) brandBtn.click();
+    else if (typeof render === 'function') render();
+  }
 }
-
-function syncToCloud(showAlert = false) {
-  if (!currentUser || !localUsers[currentUser.email]) return;
-  localUsers[currentUser.email].learnedIds = [...learnedIds];
-  localUsers[currentUser.email].personalIds = [...personalIds];
-  localUsers[currentUser.email].customWords = JSON.parse(JSON.stringify(customWords));
-  localStorage.setItem('lt_local_users', JSON.stringify(localUsers));
-  if (showAlert) alert('✅ Прогресс и личный словарь успешно сохранены в профиле!');
-}
-
-const _oldToggleLearned = toggleLearned;
-toggleLearned = function(id) { _oldToggleLearned(id); syncToCloud(false); };
-
-const _oldTogglePersonal = togglePersonal;
-togglePersonal = function(id) { _oldTogglePersonal(id); syncToCloud(false); };
-
-const _oldSaveNewWord = saveNewWord;
-saveNewWord = function() { _oldSaveNewWord(); syncToCloud(false); };
-
 updateAccountUI();
 // РЕЗЕРВНОЕ КОПИРОВАНИЕ СЛОВАРЯ В ФАЙЛ (.JSON)
 function exportBackup() {
