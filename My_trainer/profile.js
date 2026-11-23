@@ -810,10 +810,8 @@
                   <button onclick="toggleProfileSubMenu('friends')">Список друзей</button>
                   ` + (isSelf ? '<button onclick="window._ltProfileState.editing=true; toggleProfileSubMenu();">Настройки приватности</button>' : '') + `
                 </div>
-              </div>
-                     ` + rightActionHtml +
-           (isAdminUser ? '<button class="btn-primary lt-prof-action-btn" onclick="window._ltProfileState.adminPanelOpen = !window._ltProfileState.adminPanelOpen; render();">Панель администратора</button>' : '') +
-           (isSelf ? '<button class="btn-secondary lt-prof-action-btn" onclick="if(typeof openModal===\'function\') openModal(\'accountModal\');">Аккаунт / Выход</button>' : '') + `
+              </div>            ` + rightActionHtml +
+              (isAdminUser ? '<button class="btn-primary lt-prof-action-btn" onclick="window._ltProfileState.adminPanelOpen = !window._ltProfileState.adminPanelOpen; render();">Панель администратора</button>' : '') + `
             </div>
           </div>
         </div>
@@ -958,5 +956,134 @@
       return _prevRenderBeforeProfile();
     }
   };
+})();
+/* === ВЫПАДАЮЩЕЕ МЕНЮ КНОПКИ АККАУНТА В ВЕРХНЕЙ ПАНЕЛИ === */
+(function () {
+  function closeTopAccountDropdown() {
+    const m = document.getElementById('ltTopAccountMenu');
+    if (m) m.remove();
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#ltTopAccountMenu') && !e.target.closest('#accountBtn, .account-btn, [onclick*="openUserProfile"], [onclick*="accountModal"]')) {
+      closeTopAccountDropdown();
+    }
+  });
+
+  window.toggleTopAccountMenu = function (anchorBtn) {
+    const existing = document.getElementById('ltTopAccountMenu');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const emailEl = document.getElementById('userEmailLabel');
+    const email = emailEl ? emailEl.textContent.trim().toLowerCase() : '';
+    if (!email || !email.includes('@')) {
+      if (typeof openModal === 'function') openModal('accountModal');
+      return;
+    }
+
+    const isAdmin = email === 'trenazer.support@gmail.com';
+    const rect = anchorBtn.getBoundingClientRect();
+
+    const menu = document.createElement('div');
+    menu.id = 'ltTopAccountMenu';
+    menu.style.cssText =
+      'position:fixed; top:' + (rect.bottom + 6) + 'px; right:' + Math.max(12, window.innerWidth - rect.right) + 'px;' +
+      'min-width:230px; background:#101218; border:1px solid rgba(220,38,38,0.65);' +
+      'box-shadow:0 12px 28px rgba(0,0,0,0.65); z-index:9999; display:flex; flex-direction:column; padding:6px 0;';
+
+    const items = [
+      {
+        label: 'Мой профиль',
+        sub: email,
+        action: function () {
+          window._ltProfileState.editing = false;
+          openUserProfile('self');
+        }
+      },
+      {
+        label: 'Редактировать профиль',
+        sub: 'Имя, статус, фото и обложка',
+        action: function () {
+          openUserProfile('self');
+          window._ltProfileState.editing = true;
+          if (typeof render === 'function') render();
+        }
+      },
+      {
+        label: 'Безопасность и вход',
+        sub: 'Смена пароля, Email, резервная копия',
+        action: function () {
+          if (typeof openModal === 'function') openModal('accountModal');
+        }
+      }
+    ];
+
+    if (isAdmin) {
+      items.push({
+        label: 'Панель администратора',
+        sub: 'Управление сайтом и базой слов',
+        accent: true,
+        action: function () {
+          openUserProfile('self');
+          window._ltProfileState.adminPanelOpen = true;
+          if (typeof render === 'function') render();
+        }
+      });
+    }
+
+    items.forEach(function (it) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.style.cssText =
+        'background:transparent; border:none; text-align:left; padding:9px 14px; cursor:pointer;' +
+        'display:flex; flex-direction:column; gap:2px; border-bottom:1px solid rgba(255,255,255,0.06);';
+      btn.innerHTML =
+        '<span style="font-size:0.86rem; font-weight:700; color:' + (it.accent ? '#f87171' : '#ffffff') + ';">' + it.label + '</span>' +
+        '<span style="font-size:0.72rem; color:#9ea4b0;">' + it.sub + '</span>';
+      btn.onmouseenter = function () { btn.style.background = 'rgba(220,38,38,0.16)'; };
+      btn.onmouseleave = function () { btn.style.background = 'transparent'; };
+      btn.onclick = function (ev) {
+        ev.stopPropagation();
+        closeTopAccountDropdown();
+        it.action();
+      };
+      menu.appendChild(btn);
+    });
+
+    const logoutBtn = document.createElement('button');
+    logoutBtn.type = 'button';
+    logoutBtn.style.cssText =
+      'background:transparent; border:none; text-align:left; padding:10px 14px; cursor:pointer;' +
+      'font-size:0.85rem; font-weight:700; color:#ff8787; margin-top:2px;';
+    logoutBtn.textContent = 'Выйти из аккаунта';
+    logoutBtn.onmouseenter = function () { logoutBtn.style.background = 'rgba(220,38,38,0.22)'; };
+    logoutBtn.onmouseleave = function () { logoutBtn.style.background = 'transparent'; };
+    logoutBtn.onclick = function (ev) {
+      ev.stopPropagation();
+      closeTopAccountDropdown();
+      if (typeof authSignOut === 'function') authSignOut();
+    };
+    menu.appendChild(logoutBtn);
+
+    document.body.appendChild(menu);
+  };
+
+  document.addEventListener('click', function (e) {
+    const topBtn = e.target.closest('header button, .top-bar button, #accountBtn');
+    if (!topBtn) return;
+    const oc = topBtn.getAttribute('onclick') || '';
+    if (oc.includes('openUserProfile') || oc.includes('accountModal') || topBtn.id === 'accountBtn') {
+      const emailEl = document.getElementById('userEmailLabel');
+      const email = emailEl ? emailEl.textContent.trim().toLowerCase() : '';
+      if (email && email.includes('@')) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.toggleTopAccountMenu(topBtn);
+      }
+    }
+  }, true);
 })();
 
