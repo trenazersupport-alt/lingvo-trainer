@@ -686,29 +686,31 @@ document.addEventListener('click', function (e) {
 /* === АВТОМАТИЧЕСКОЕ ДОБАВЛЕНИЕ ВСЕХ ЗАРЕГИСТРИРОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ В «ВОЗМОЖНЫЕ ДРУЗЬЯ» === */
 (function () {
   function getCurEmailSafe() {
-    const lbl = document.getElementById('userEmailLabel');
-    const txt = lbl ? lbl.textContent.trim().toLowerCase() : '';
-    if (txt && txt.includes('@')) return txt;
     try {
+      if (typeof currentUser !== 'undefined' && currentUser && currentUser.email) {
+        return String(currentUser.email).trim().toLowerCase();
+      }
       const act = JSON.parse(localStorage.getItem('lt_active_user') || 'null');
-      if (act && act.email) return act.email.trim().toLowerCase();
+      if (act && act.email) return String(act.email).trim().toLowerCase();
     } catch (e) {}
     return '';
   }
 
   function buildRegisteredSuggestedUsers(curEmail, existingFriendIds) {
     const result = [];
+    const curPrefix = curEmail ? curEmail.split('@')[0] : '';
     try {
       const usersMap = JSON.parse(localStorage.getItem('lt_local_users') || '{}') || {};
       Object.keys(usersMap).forEach(function (em) {
         const cleanEm = em.trim().toLowerCase();
         if (!cleanEm || !cleanEm.includes('@')) return;
-        if (cleanEm === curEmail) return; // Не показываем самого себя
+        // Строго исключаем самого себя (и по полному email, и по префиксу до @)
+        if (cleanEm === curEmail || (curPrefix && cleanEm.split('@')[0] === curPrefix)) return;
 
         const uid = 'reg_' + cleanEm;
         if (existingFriendIds.has(uid) || existingFriendIds.has(cleanEm)) return;
 
-        let nick = cleanEm.split('@').at(0);
+        let nick = cleanEm.split('@')[0];
         let handle = '@' + nick.toLowerCase().replace(/[^a-z0-9_]/g, '');
         let langInfo = 'Изучает корейский и английский';
         let avatar = '';
@@ -762,19 +764,25 @@ document.addEventListener('click', function (e) {
     const regUsers = buildRegisteredSuggestedUsers(curEmail, friendIds);
     const baseSug = Array.isArray(prof.suggestedFriends) ? prof.suggestedFriends : [];
 
-    // Убираем устаревшие записи зарегистрированных пользователей и добавляем актуальных в начало списка
+    const curPrefix = curEmail.split('@')[0];
     const nonRegSug = baseSug.filter(function (s) {
-      return !s.isRegistered && !String(s.id || '').startsWith('reg_') && !friendIds.has(String(s.id));
+      const sId = String(s.id || '');
+      const sEmail = String(s.email || '').toLowerCase();
+      if (s.isRegistered || sId.startsWith('reg_')) return false;
+      if (sEmail === curEmail || (curPrefix && sEmail.split('@')[0] === curPrefix)) return false;
+      if (friendIds.has(sId)) return false;
+      return true;
     });
 
     const merged = regUsers.concat(nonRegSug);
-    if (JSON.stringify(merged) !== JSON.stringify(baseSug)) {
-      prof.suggestedFriends = merged;
-      try { localStorage.setItem(profKey, JSON.stringify(prof)); } catch (e) {}
-    }
+    prof.suggestedFriends = merged;
+    try {
+      localStorage.setItem(profKey, JSON.stringify(prof));
+      // Синхронизируем актуальный профиль в v1, чтобы страницы «Друзья» и «Возможные друзья» сразу видели новых пользователей
+      localStorage.setItem('lt_user_profile_v1', JSON.stringify(prof));
+    } catch (e) {}
   }
 
-  // Запускаем синхронизацию при загрузке и перед каждой отрисовкой экрана
   syncRegisteredUsersIntoSuggested();
   const _prevRenderSyncUsers = window.render;
   window.render = function () {
@@ -782,3 +790,4 @@ document.addEventListener('click', function (e) {
     return typeof _prevRenderSyncUsers === 'function' ? _prevRenderSyncUsers() : undefined;
   };
 })();
+
