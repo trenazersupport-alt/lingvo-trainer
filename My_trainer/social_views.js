@@ -302,13 +302,36 @@
       });
     } catch (e) {}
 
-    try {
+      try {
       let pool = [];
-      if (typeof getAllWords === 'function') {
-        pool = getAllWords();
-      } else if (typeof WORDS !== 'undefined' && Array.isArray(WORDS)) {
-        pool = WORDS;
+      if (typeof WORDS_DB !== 'undefined' && WORDS_DB) {
+        ['ko', 'en'].forEach(function (lc) {
+          const langBucket = WORDS_DB[lc];
+          if (Array.isArray(langBucket)) {
+            langBucket.forEach(function (w) { pool.push(Object.assign({ lang: lc }, w)); });
+          } else if (langBucket && typeof langBucket === 'object') {
+            Object.keys(langBucket).forEach(function (cat) {
+              if (Array.isArray(langBucket[cat])) {
+                langBucket[cat].forEach(function (w) { pool.push(Object.assign({ lang: lc }, w)); });
+              }
+            });
+          }
+        });
       }
+      if (!pool.length && typeof getAllWords === 'function') {
+        const savedLang = typeof curLang !== 'undefined' ? curLang : 'ko';
+        ['ko', 'en'].forEach(function (lc) {
+          if (typeof curLang !== 'undefined') window.curLang = lc;
+          const part = getAllWords() || [];
+          part.forEach(function (w) {
+            if (!pool.some(function (p) { return String(p.id) === String(w.id); })) {
+              pool.push(Object.assign({ lang: lc }, w));
+            }
+          });
+        });
+        if (typeof curLang !== 'undefined') window.curLang = savedLang;
+      }
+
       pool.forEach(function (w) {
         if (w && learnedSet.has(String(w.id))) {
           const langCode = w.lang || (/[가-힣]/.test(w.word || '') ? 'ko' : 'en');
