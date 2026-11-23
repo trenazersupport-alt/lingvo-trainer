@@ -303,58 +303,42 @@
     } catch (e) {}
 
       try {
-      let pool = [];
-      if (typeof WORDS_DB !== 'undefined' && WORDS_DB) {
-        ['ko', 'en'].forEach(function (lc) {
-          const langBucket = WORDS_DB[lc];
-          if (Array.isArray(langBucket)) {
-            langBucket.forEach(function (w) { pool.push(Object.assign({ lang: lc }, w)); });
-          } else if (langBucket && typeof langBucket === 'object') {
-            Object.keys(langBucket).forEach(function (cat) {
-              if (Array.isArray(langBucket[cat])) {
-                langBucket[cat].forEach(function (w) { pool.push(Object.assign({ lang: lc }, w)); });
-              }
-            });
+      const CACHE_KEY = 'lt_learned_words_cache_v1';
+      let cacheMap = {};
+      try {
+        cacheMap = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') || {};
+      } catch (e) {}
+
+      // 1. Подтягиваем слова текущего активного языка через getAllWords() и обновляем общий кэш
+      if (typeof getAllWords === 'function') {
+        const curWords = getAllWords() || [];
+        curWords.forEach(function (w) {
+          if (w && learnedSet.has(String(w.id))) {
+            const langCode = w.lang || (/[가-힣]/.test(w.word || '') ? 'ko' : 'en');
+            cacheMap[String(w.id)] = {
+              id: w.id,
+              lang: langCode,
+              word: w.word,
+              translit: w.translit || w.roman || '',
+              meaning: w.meaning || w.translation || ''
+            };
           }
         });
       }
-             if (!pool.length) {
-        if (typeof getAllWords === 'function') {
-          (getAllWords() || []).forEach(function (w) { pool.push(w); });
-        }
-        [window.WORDS, window.KO_WORDS, window.EN_WORDS, window.DICT_KO, window.DICT_EN].forEach(function (src, idx) {
-          const fallbackLang = (idx === 2 || idx === 4) ? 'en' : 'ko';
-          if (Array.isArray(src)) {
-            src.forEach(function (w) {
-              if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
-                pool.push(Object.assign({ lang: fallbackLang }, w));
-              }
-            });
-          } else if (src && typeof src === 'object') {
-            Object.keys(src).forEach(function (k) {
-              if (Array.isArray(src[k])) {
-                src[k].forEach(function (w) {
-                  if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
-                    pool.push(Object.assign({ lang: fallbackLang }, w));
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-      pool.forEach(function (w) {
-        if (w && learnedSet.has(String(w.id))) {
-          const langCode = w.lang || (/[가-힣]/.test(w.word || '') ? 'ko' : 'en');
-          allLearned.push({
-            id: w.id,
-            lang: langCode,
-            word: w.word,
-            translit: w.translit || w.roman || '',
-            meaning: w.meaning || w.translation || ''
-          });
+
+      // 2. Удаляем из кэша слова, если пользователь снял с них отметку «Изучено»
+      Object.keys(cacheMap).forEach(function (idKey) {
+        if (!learnedSet.has(String(idKey))) {
+          delete cacheMap[idKey];
         }
       });
+
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheMap));
+      } catch (e) {}
+
+      // 3. Собираем итоговый объединённый список по обоим языкам
+      allLearned = Object.values(cacheMap);
     } catch (e) {}
 
     const koCount = allLearned.filter(function (x) { return x.lang === 'ko'; }).length;
