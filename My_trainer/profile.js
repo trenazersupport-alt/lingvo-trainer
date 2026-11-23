@@ -83,11 +83,35 @@
     const isAdmin = email === ADMIN_EMAIL;
     try {
       const raw = localStorage.getItem(key);
-      if (!raw) {
-        const def = getDefaultProfile();
+           if (!raw) {
+        let def = getDefaultProfile();
+        try {
+          const legacyRaw = localStorage.getItem('lt_user_profile_v1');
+          if (legacyRaw) {
+            const legacy = JSON.parse(legacyRaw);
+            def = Object.assign(def, legacy, { email: email, isAdmin: isAdmin });
+          }
+        } catch (e) {}
         saveProfile(def);
         return def;
       }
+      const parsed = Object.assign(getDefaultProfile(), JSON.parse(raw));
+      if (!parsed.avatar || !parsed.cover) {
+        try {
+          const legacyRaw = localStorage.getItem('lt_user_profile_v1');
+          if (legacyRaw) {
+            const legacy = JSON.parse(legacyRaw);
+            if (!parsed.avatar && legacy.avatar) parsed.avatar = legacy.avatar;
+            if (!parsed.cover && legacy.cover) {
+              parsed.cover = legacy.cover;
+              if (typeof legacy.coverPosY === 'number') parsed.coverPosY = legacy.coverPosY;
+            }
+          }
+        } catch (e) {}
+      }
+      parsed.email = email;
+      parsed.isAdmin = isAdmin;
+      return parsed;
       const parsed = Object.assign(getDefaultProfile(), JSON.parse(raw));
       parsed.email = email;
       parsed.isAdmin = isAdmin;
