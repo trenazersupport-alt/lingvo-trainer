@@ -724,17 +724,14 @@ function authSignOut() {
   if (typeof setAuthMsg === 'function') setAuthMsg('');
   if (typeof closeModal === 'function') closeModal('accountModal');
 
-  // Возвращаем строго на главную страницу с 5 карточками
-  document.body.classList.add('is-home');
-  if (typeof goHome === 'function') {
-    goHome();
+  // Возвращаем строго на главную страницу с 6 карточками ('about')
+  if (typeof switchTab === 'function') {
+    switchTab('about');
   } else {
-    window.curTab = 'home';
-    const brandBtn = document.querySelector('header .brand, header .logo, [onclick*="goHome"], [onclick*="switchTab(\'home\')"]');
-    if (brandBtn) brandBtn.click();
-    else if (typeof render === 'function') render();
+    curTab = 'about';
+    localStorage.setItem('lt_cur_tab', 'about');
+    if (typeof render === 'function') render();
   }
-}
 updateAccountUI();
 // РЕЗЕРВНОЕ КОПИРОВАНИЕ СЛОВАРЯ В ФАЙЛ (.JSON)
 function exportBackup() {
@@ -1596,7 +1593,12 @@ function speakHeroCard(idx, event) {
   u.rate = 0.92;
   window.speechSynthesis.speak(u);
 }
-
+if (typeof switchTab === 'function') {
+  const _origSwitchTabHomeFix = switchTab;
+  switchTab = function (tab) {
+    return _origSwitchTabHomeFix(tab === 'home' ? 'about' : tab);
+  };
+}
 const _origRenderForHome = window.render;
 window.render = function() {
   const ws = document.getElementById('workspace');
