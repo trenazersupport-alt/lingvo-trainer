@@ -318,20 +318,19 @@
           }
         });
       }
-      if (!pool.length && typeof getAllWords === 'function') {
-        const savedLang = typeof curLang !== 'undefined' ? curLang : 'ko';
+           if (!pool.length && typeof getAllWords === 'function') {
+        const savedLang = (typeof curLang !== 'undefined' && curLang) ? curLang : 'ko';
         ['ko', 'en'].forEach(function (lc) {
-          if (typeof curLang !== 'undefined') window.curLang = lc;
+          if (typeof setLang === 'function') setLang(lc);
           const part = getAllWords() || [];
           part.forEach(function (w) {
-            if (!pool.some(function (p) { return String(p.id) === String(w.id); })) {
+            if (w && !pool.some(function (p) { return String(p.id) === String(w.id); })) {
               pool.push(Object.assign({ lang: lc }, w));
             }
           });
         });
-        if (typeof curLang !== 'undefined') window.curLang = savedLang;
+        if (typeof setLang === 'function') setLang(savedLang);
       }
-
       pool.forEach(function (w) {
         if (w && learnedSet.has(String(w.id))) {
           const langCode = w.lang || (/[가-힣]/.test(w.word || '') ? 'ko' : 'en');
