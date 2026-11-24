@@ -119,7 +119,11 @@
       return getDefaultProfile();
     }
   }
-
+  function saveProfile(data) {
+    try {
+      localStorage.setItem(getProfileStorageKey(), JSON.stringify(data));
+    } catch (e) {}
+  }
   window._ltProfileState = {
     viewMode: 'self',
     guestFriendStatus: 'none',
