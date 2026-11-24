@@ -4,21 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lingvo Trainer — Платформа изучения языков</title>
- <link rel="stylesheet" href="theme.css?v=2" />
+  <link rel="stylesheet" href="theme.css?v=3" />
 </head>
 <body>
-  <div class="lt-bg-glow"></div>
-
   <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
   <header class="lt-topbar">
     <div class="lt-topbar-left">
-      <div class="lt-nav-arrows">
-        <button id="btnNavBack" class="lt-icon-btn" title="Назад" onclick="Router.back()">«</button>
-        <button id="btnNavForward" class="lt-icon-btn" title="Вперёд" onclick="Router.forward()">»</button>
-      </div>
       <a href="#home" class="lt-brand" onclick="Router.go('home'); return false;">
-        <span class="lt-brand-dot"></span>
-        <span>Lingvo Trainer</span>
+        <img src="logo.png" alt="Lingvo Trainer" class="lt-brand-logo" onerror="this.style.display='none'" />
+        <div class="lt-brand-text">
+          <span class="lt-brand-title">Lingvo Trainer</span>
+          <span class="lt-brand-sub">О проекте • Правила • Статистика</span>
+        </div>
       </a>
     </div>
 
@@ -38,6 +35,10 @@
         <span id="topAccountLabel">Аккаунт</span>
         <span id="topAccountArrow" class="lt-arrow-glyph" style="display:none;">▾</span>
       </button>
+      <div class="lt-nav-arrows">
+        <button id="btnNavBack" class="lt-icon-btn" title="Назад" onclick="Router.back()">«</button>
+        <button id="btnNavForward" class="lt-icon-btn" title="Вперёд" onclick="Router.forward()">»</button>
+      </div>
     </div>
   </header>
 
@@ -46,7 +47,7 @@
 
   <!-- ФУТЕР -->
   <footer class="lt-footer">
-    <span>Lingvo Trainer © 2026</span>
+    <span>© 2026 Lingvo Trainer • Образовательная платформа</span>
     <div class="lt-footer-links">
       <a href="#support" onclick="Router.go('support'); return false;">Поддержка и FAQ</a>
       <a href="#support-rules" onclick="Router.go('support', { tab: 'rules' }); return false;">Правила сообщества</a>
@@ -95,7 +96,7 @@
     </div>
   </div>
 
-  <!-- FIREBASE SDK (COMPAT ДЛЯ ЧИСТОЙ МОДУЛЬНОЙ РАБОТЫ БЕЗ СБОРЩИКОВ) -->
+  <!-- FIREBASE SDK -->
   <script src="https://gstatic.com"></script>
   <script src="https://gstatic.com"></script>
   <script src="https://gstatic.com"></script>
@@ -104,7 +105,7 @@
   <script src="firebase.js?v=1"></script>
   <script src="ui.js?v=1"></script>
   <script src="router.js?v=1"></script>
-  <script src="home.page.js?v=1"></script>
+  <script src="home.page.js?v=2"></script>
   <script src="rating.page.js?v=1"></script>
   <script src="support.page.js?v=1"></script>
 </body>
