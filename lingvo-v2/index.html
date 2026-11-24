@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lingvo Trainer — Платформа изучения языков</title>
+  <link rel="stylesheet" href="css/theme.css?v=1" />
+</head>
+<body>
+  <div class="lt-bg-glow"></div>
+
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+  <header class="lt-topbar">
+    <div class="lt-topbar-left">
+      <div class="lt-nav-arrows">
+        <button id="btnNavBack" class="lt-icon-btn" title="Назад" onclick="Router.back()">«</button>
+        <button id="btnNavForward" class="lt-icon-btn" title="Вперёд" onclick="Router.forward()">»</button>
+      </div>
+      <a href="#home" class="lt-brand" onclick="Router.go('home'); return false;">
+        <span class="lt-brand-dot"></span>
+        <span>Lingvo Trainer</span>
+      </a>
+    </div>
+
+    <div class="lt-topbar-center" id="topbarLangSwitcher">
+      <button class="lt-lang-pill" data-lang="ko" onclick="Router.selectCourseLang('ko')">
+        <span class="lt-code">KR</span> Корейский
+      </button>
+      <button class="lt-lang-pill" data-lang="en" onclick="Router.selectCourseLang('en')">
+        <span class="lt-code">GB</span> Английский
+      </button>
+    </div>
+
+    <div class="lt-topbar-right">
+      <button class="lt-ghost-btn" onclick="Router.go('rating')">Рейтинг</button>
+      <button id="topAccountBtn" class="lt-account-btn" onclick="AuthUI.handleTopBtn(this)">
+        <span id="topAccountStatusDot" class="lt-status-dot"></span>
+        <span id="topAccountLabel">Аккаунт</span>
+        <span id="topAccountArrow" class="lt-arrow-glyph" style="display:none;">▾</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ -->
+  <main id="appRoot" class="lt-main"></main>
+
+  <!-- ФУТЕР -->
+  <footer class="lt-footer">
+    <span>Lingvo Trainer © 2026</span>
+    <div class="lt-footer-links">
+      <a href="#support" onclick="Router.go('support'); return false;">Поддержка и FAQ</a>
+      <a href="#support-rules" onclick="Router.go('support', { tab: 'rules' }); return false;">Правила сообщества</a>
+    </div>
+  </footer>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ВХОД / РЕГИСТРАЦИЯ / СБРОС ПАРОЛЯ -->
+  <div id="authModal" class="lt-modal-overlay" style="display:none;">
+    <div class="lt-glass-modal">
+      <div class="lt-modal-head">
+        <h3 id="authModalTitle">Вход в Lingvo Trainer</h3>
+        <button class="lt-close-btn" onclick="AuthUI.close()">✕</button>
+      </div>
+
+      <div id="authLoginForm">
+        <label class="lt-label">Электронная почта (Email)</label>
+        <input type="email" id="authEmailInp" class="lt-input" placeholder="name@example.com" />
+
+        <label class="lt-label">Пароль (от 6 символов)</label>
+        <div class="lt-pass-row">
+          <input type="password" id="authPassInp" class="lt-input" placeholder="••••••" />
+          <button type="button" class="lt-icon-btn" onclick="AuthUI.togglePassVis()">👁</button>
+        </div>
+
+        <div id="authErrorBox" class="lt-form-msg"></div>
+
+        <div class="lt-btn-row">
+          <button class="lt-btn-primary" onclick="CloudAuth.signIn()">Войти</button>
+          <button class="lt-btn-secondary" onclick="CloudAuth.signUp()">Регистрация</button>
+        </div>
+
+        <div style="text-align:right; margin-top:10px;">
+          <button type="button" class="lt-link-btn" onclick="AuthUI.showReset()">Забыли пароль?</button>
+        </div>
+      </div>
+
+      <div id="authResetForm" style="display:none;">
+        <p class="lt-muted-text">Укажите ваш Email — мы отправим официальную ссылку для сброса пароля.</p>
+        <input type="email" id="resetEmailInp" class="lt-input" placeholder="name@example.com" />
+        <div id="resetMsgBox" class="lt-form-msg"></div>
+        <div class="lt-btn-row">
+          <button class="lt-btn-primary" onclick="CloudAuth.resetPassword()">Отправить письмо</button>
+          <button class="lt-btn-secondary" onclick="AuthUI.showLogin()">Назад ко входу</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK (COMPAT ДЛЯ ЧИСТОЙ МОДУЛЬНОЙ РАБОТЫ БЕЗ СБОРЩИКОВ) -->
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+
+  <!-- МОДУЛИ ПЛАТФОРМЫ -->
+  <script src="js/core/firebase.js?v=1"></script>
+  <script src="js/core/ui.js?v=1"></script>
+  <script src="js/core/router.js?v=1"></script>
+  <script src="js/pages/home.page.js?v=1"></script>
+  <script src="js/pages/rating.page.js?v=1"></script>
+  <script src="js/pages/support.page.js?v=1"></script>
+</body>
+</html>
