@@ -9,27 +9,36 @@ window.HomePage = {
     { img: '6.jpg', lang: 'KO', code: 'ko-KR', phrase: '포기하지 않으면 반드시 이루어진다.', translit: '[пхогихаджи анымён пандыси ируоджинда]', meaning: 'Если не сдаваться, мечта обязательно сбудется.' }
   ],
 
-  speak(text, langCode) {
-    if (!('speechSynthesis' in window)) return;
+  speakCard(cardEl, text, langCode) {
+    document.querySelectorAll('.lt-art-card.is-speaking').forEach(el => el.classList.remove('is-speaking'));
+    cardEl.classList.add('is-speaking');
+
+    if (!('speechSynthesis' in window)) {
+      setTimeout(() => cardEl.classList.remove('is-speaking'), 1200);
+      return;
+    }
+
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = langCode;
     u.rate = 0.92;
+    u.onend = () => cardEl.classList.remove('is-speaking');
+    u.onerror = () => cardEl.classList.remove('is-speaking');
     window.speechSynthesis.speak(u);
   },
 
   render(root) {
     document.body.classList.remove('theme-ko', 'theme-en');
-    document.querySelectorAll('.lt-lang-pill').forEach(b => b.classList.remove('active'));
 
     const cardsHtml = this.cards.map(c =>
-      '<div class="lt-art-card" style="background-image:url(\'' + c.img + '\');">' +
+      '<div class="lt-art-card" style="background-image:url(\'' + c.img + '\');" ' +
+        'title="Нажмите, чтобы прослушать" ' +
+        'onclick="HomePage.speakCard(this, \'' + c.phrase.replace(/'/g, "\\'") + '\', \'' + c.code + '\')">' +
         '<span class="lt-art-badge">' + c.lang + '</span>' +
         '<div class="lt-art-hover-panel">' +
           '<div class="lt-art-phrase">' + c.phrase + '</div>' +
           '<div class="lt-art-translit">' + c.translit + '</div>' +
           '<div class="lt-art-meaning">' + c.meaning + '</div>' +
-          '<button class="lt-speak-mini-btn" onclick="HomePage.speak(\'' + c.phrase.replace(/'/g, "\\'") + '\', \'' + c.code + '\')">Озвучить</button>' +
         '</div>' +
       '</div>'
     ).join('');
@@ -89,3 +98,4 @@ window.HomePage = {
       '</div>';
   }
 };
+
