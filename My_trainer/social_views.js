@@ -778,8 +778,6 @@ document.addEventListener('click', function (e) {
     prof.suggestedFriends = merged;
     try {
       localStorage.setItem(profKey, JSON.stringify(prof));
-      // Синхронизируем актуальный профиль в v1, чтобы страницы «Друзья» и «Возможные друзья» сразу видели новых пользователей
-      localStorage.setItem('lt_user_profile_v1', JSON.stringify(prof));
     } catch (e) {}
   }
 
