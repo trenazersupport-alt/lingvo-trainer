@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lingvo Trainer — Платформа изучения языков</title>
-  <link rel="stylesheet" href="theme.css?v=3" />
+  <title>Lingvo Trainer — Образовательная платформа</title>
+  <link rel="stylesheet" href="theme.css?v=4" />
 </head>
 <body>
   <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
@@ -19,25 +19,15 @@
       </a>
     </div>
 
-    <div class="lt-topbar-center" id="topbarLangSwitcher">
-      <button class="lt-lang-pill" data-lang="ko" onclick="Router.selectCourseLang('ko')">
-        <span class="lt-code">KR</span> Корейский
-      </button>
-      <button class="lt-lang-pill" data-lang="en" onclick="Router.selectCourseLang('en')">
-        <span class="lt-code">GB</span> Английский
-      </button>
-    </div>
-
     <div class="lt-topbar-right">
-      <button class="lt-ghost-btn" onclick="Router.go('rating')">Рейтинг</button>
-      <button id="topAccountBtn" class="lt-account-btn" onclick="AuthUI.handleTopBtn(this)">
+      <button id="topAccountBtn" type="button" class="lt-account-btn" onclick="AuthUI.handleTopBtn(this)">
         <span id="topAccountStatusDot" class="lt-status-dot"></span>
         <span id="topAccountLabel">Аккаунт</span>
         <span id="topAccountArrow" class="lt-arrow-glyph" style="display:none;">▾</span>
       </button>
       <div class="lt-nav-arrows">
-        <button id="btnNavBack" class="lt-icon-btn" title="Назад" onclick="Router.back()">«</button>
-        <button id="btnNavForward" class="lt-icon-btn" title="Вперёд" onclick="Router.forward()">»</button>
+        <button id="btnNavBack" type="button" class="lt-icon-btn" title="Назад" onclick="Router.back()">«</button>
+        <button id="btnNavForward" type="button" class="lt-icon-btn" title="Вперёд" onclick="Router.forward()">»</button>
       </div>
     </div>
   </header>
@@ -48,10 +38,7 @@
   <!-- ФУТЕР -->
   <footer class="lt-footer">
     <span>© 2026 Lingvo Trainer • Образовательная платформа</span>
-    <div class="lt-footer-links">
-      <a href="#support" onclick="Router.go('support'); return false;">Поддержка и FAQ</a>
-      <a href="#support-rules" onclick="Router.go('support', { tab: 'rules' }); return false;">Правила сообщества</a>
-    </div>
+    <button type="button" class="lt-footer-support-btn" onclick="Router.go('support')">Написать в поддержку</button>
   </footer>
 
   <!-- МОДАЛЬНОЕ ОКНО: ВХОД / РЕГИСТРАЦИЯ / СБРОС ПАРОЛЯ -->
@@ -59,7 +46,7 @@
     <div class="lt-glass-modal">
       <div class="lt-modal-head">
         <h3 id="authModalTitle">Вход в Lingvo Trainer</h3>
-        <button class="lt-close-btn" onclick="AuthUI.close()">✕</button>
+        <button type="button" class="lt-close-btn" onclick="AuthUI.close()">✕</button>
       </div>
 
       <div id="authLoginForm">
@@ -75,8 +62,8 @@
         <div id="authErrorBox" class="lt-form-msg"></div>
 
         <div class="lt-btn-row">
-          <button class="lt-btn-primary" onclick="CloudAuth.signIn()">Войти</button>
-          <button class="lt-btn-secondary" onclick="CloudAuth.signUp()">Регистрация</button>
+          <button type="button" class="lt-btn-primary" onclick="CloudAuth.signIn()">Войти</button>
+          <button type="button" class="lt-btn-secondary" onclick="CloudAuth.signUp()">Регистрация</button>
         </div>
 
         <div style="text-align:right; margin-top:10px;">
@@ -89,24 +76,24 @@
         <input type="email" id="resetEmailInp" class="lt-input" placeholder="name@example.com" />
         <div id="resetMsgBox" class="lt-form-msg"></div>
         <div class="lt-btn-row">
-          <button class="lt-btn-primary" onclick="CloudAuth.resetPassword()">Отправить письмо</button>
-          <button class="lt-btn-secondary" onclick="AuthUI.showLogin()">Назад ко входу</button>
+          <button type="button" class="lt-btn-primary" onclick="CloudAuth.resetPassword()">Отправить письмо</button>
+          <button type="button" class="lt-btn-secondary" onclick="AuthUI.showLogin()">Назад ко входу</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- FIREBASE SDK -->
-  <script src="https://gstatic.com"></script>
-  <script src="https://gstatic.com"></script>
-  <script src="https://gstatic.com"></script>
+  <!-- МОДУЛИ ИНТЕРФЕЙСА (ЗАГРУЖАЮТСЯ ПЕРВЫМИ ДЛЯ МГНОВЕННОГО ОТКЛИКА КНОПОК) -->
+  <script src="ui.js?v=2"></script>
+  <script src="router.js?v=2"></script>
+  <script src="home.page.js?v=3"></script>
+  <script src="rating.page.js?v=2"></script>
+  <script src="support.page.js?v=2"></script>
 
-  <!-- МОДУЛИ ПЛАТФОРМЫ -->
-  <script src="firebase.js?v=1"></script>
-  <script src="ui.js?v=1"></script>
-  <script src="router.js?v=1"></script>
-  <script src="home.page.js?v=2"></script>
-  <script src="rating.page.js?v=1"></script>
-  <script src="support.page.js?v=1"></script>
+  <!-- FIREBASE SDK И ОБЛАЧНАЯ БАЗА -->
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+  <script src="https://gstatic.com"></script>
+  <script src="firebase.js?v=2"></script>
 </body>
 </html>
