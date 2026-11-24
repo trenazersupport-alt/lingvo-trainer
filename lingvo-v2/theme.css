@@ -292,3 +292,16 @@ body.theme-en {
   font-size: 0.78rem;
   color: var(--text-muted);
 }
+/* УВЕЛИЧЕНИЕ КАРТОЧКИ ПРИ НАЖАТИИ И ОЗВУЧКЕ */
+.lt-art-card {
+  cursor: pointer;
+  user-select: none;
+}
+
+.lt-art-card:active,
+.lt-art-card.is-speaking {
+  transform: scale(1.07);
+  z-index: 10;
+  border-color: #ef4444;
+  box-shadow: 0 0 26px rgba(220, 38, 38, 0.7);
+}
