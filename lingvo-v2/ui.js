@@ -1,4 +1,11 @@
 /* === ЕДИНЫЕ МАТОВЫЕ КОМПОНЕНТЫ ИНТЕРФЕЙСА (ui.js) === */
+window.AppState = window.AppState || {
+  user: null,
+  profile: null,
+  isAdmin: false,
+  selectedLang: null
+};
+
 window.GlassUI = {
   closeDropdown() {
     const old = document.getElementById('ltActiveGlassDropdown');
@@ -45,36 +52,48 @@ document.addEventListener('click', function (e) {
 
 window.AuthUI = {
   open() {
-    document.getElementById('authModal').style.display = 'flex';
-    this.showLogin();
+    const modal = document.getElementById('authModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      this.showLogin();
+    }
   },
   close() {
-    document.getElementById('authModal').style.display = 'none';
+    const modal = document.getElementById('authModal');
+    if (modal) modal.style.display = 'none';
   },
   showLogin() {
-    document.getElementById('authModalTitle').textContent = 'Вход и регистрация';
-    document.getElementById('authLoginForm').style.display = 'block';
-    document.getElementById('authResetForm').style.display = 'none';
+    const t = document.getElementById('authModalTitle');
+    const l = document.getElementById('authLoginForm');
+    const r = document.getElementById('authResetForm');
+    if (t) t.textContent = 'Вход и регистрация';
+    if (l) l.style.display = 'block';
+    if (r) r.style.display = 'none';
   },
   showReset() {
-    document.getElementById('authModalTitle').textContent = 'Сброс пароля';
-    document.getElementById('authLoginForm').style.display = 'none';
-    document.getElementById('authResetForm').style.display = 'block';
+    const t = document.getElementById('authModalTitle');
+    const l = document.getElementById('authLoginForm');
+    const r = document.getElementById('authResetForm');
+    if (t) t.textContent = 'Сброс пароля';
+    if (l) l.style.display = 'none';
+    if (r) r.style.display = 'block';
   },
   togglePassVis() {
     const inp = document.getElementById('authPassInp');
-    inp.type = inp.type === 'password' ? 'text' : 'password';
+    if (inp) inp.type = inp.type === 'password' ? 'text' : 'password';
   },
   handleTopBtn(btn) {
-    if (!AppState.user) {
+    if (!window.AppState || !AppState.user) {
       this.open();
       return;
     }
+    const emailSub = (AppState.profile && AppState.profile.email) || AppState.user.email || '';
     GlassUI.toggleDropdown(btn, [
-      { title: 'Мой профиль', sub: AppState.profile.email, onClick: () => Router.go('profile') },
+      { title: 'Мой профиль', sub: emailSub, onClick: () => Router.go('profile') },
       { title: 'Курсы (KR / GB)', sub: 'Слова, грамматика и тренировка', onClick: () => Router.go('courses') },
+      { title: 'Рейтинг учеников', sub: 'Общая лига и прогресс XP', onClick: () => Router.go('rating') },
       { title: 'Настройки', sub: 'Профиль, видимость и безопасность', onClick: () => Router.go('settings') },
-      { title: 'Выйти из аккаунта', danger: true, onClick: () => CloudAuth.signOut() }
+      { title: 'Выйти из аккаунта', danger: true, onClick: () => { if (window.CloudAuth) CloudAuth.signOut(); } }
     ]);
   }
 };
