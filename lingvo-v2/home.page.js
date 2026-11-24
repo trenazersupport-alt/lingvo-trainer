@@ -1,12 +1,12 @@
 /* === ГЛАВНАЯ ВИТРИНА И ХАБ КУРСОВ (home.page.js) === */
 window.HomePage = {
   cards: [
-    { lang: 'KO', code: 'ko-KR', phrase: '시작이 반이다', translit: 'Сиджаги панида', meaning: 'Хорошее начало — половина дела' },
-    { lang: 'EN', code: 'en-US', phrase: 'Every step counts', translit: 'Эври степ каунтс', meaning: 'Каждый шаг имеет значение' },
-    { lang: 'KO', code: 'ko-KR', phrase: '천리길도 한 걸음부터', translit: 'Чхоллигильдо хан горымбутхо', meaning: 'Путь в тысячу ли начинается с первого шага' },
-    { lang: 'EN', code: 'en-US', phrase: 'Practice makes progress', translit: 'Прэктис мэйкс прогресс', meaning: 'Практика рождает прогресс' },
-    { lang: 'KO', code: 'ko-KR', phrase: '꿈을 향해 나아가다', translit: 'Ккумыль хянхэ наагада', meaning: 'Двигаться навстречу мечте' },
-    { lang: 'EN', code: 'en-US', phrase: 'Speak with confidence', translit: 'Спик виз конфиденс', meaning: 'Говори с уверенностью' }
+    { img: '1.jpg', lang: 'EN', code: 'en-US', phrase: 'Every small step builds your fluency.', translit: '[эври смол степ билдз ё флуэнси]', meaning: 'Каждый маленький шаг строит твою беглость речи.' },
+    { img: '2.jpg', lang: 'EN', code: 'en-US', phrase: 'Mistakes are proof that you are trying.', translit: '[мистэйкс а пруф зэт ю а траинг]', meaning: 'Ошибки — это доказательство того, что ты стараешься.' },
+    { img: '3.jpg', lang: 'KO', code: 'ko-KR', phrase: '시작이 반이다.', translit: '[сиджаги панида]', meaning: 'Хорошее начало — половина дела.' },
+    { img: '4.jpg', lang: 'KO', code: 'ko-KR', phrase: '천 리 길도 한 걸음부터.', translit: '[чхон ли гильдо хан горымбутхо]', meaning: 'Путь в тысячу ли начинается с одного шага.' },
+    { img: '5.jpg', lang: 'EN', code: 'en-US', phrase: 'I can handle it.', translit: '[ай кэн хэндл ит]', meaning: 'Я справлюсь с этим.' },
+    { img: '6.jpg', lang: 'KO', code: 'ko-KR', phrase: '포기하지 않으면 반드시 이루어진다.', translit: '[пхогихаджи анымён пандыси ируоджинда]', meaning: 'Если не сдаваться, мечта обязательно сбудется.' }
   ],
 
   speak(text, langCode) {
@@ -19,29 +19,29 @@ window.HomePage = {
   },
 
   render(root) {
+    document.body.classList.remove('theme-ko', 'theme-en');
     document.querySelectorAll('.lt-lang-pill').forEach(b => b.classList.remove('active'));
-    const cardsHtml = this.cards.map((c) =>
-      '<div class="lt-art-card">' +
+
+    const cardsHtml = this.cards.map(c =>
+      '<div class="lt-art-card" style="background-image:url(\'' + c.img + '\');">' +
         '<span class="lt-art-badge">' + c.lang + '</span>' +
         '<div class="lt-art-hover-panel">' +
           '<div class="lt-art-phrase">' + c.phrase + '</div>' +
           '<div class="lt-art-translit">' + c.translit + '</div>' +
           '<div class="lt-art-meaning">' + c.meaning + '</div>' +
-          '<button class="lt-btn-secondary" style="padding:5px 11px; font-size:0.78rem;" onclick="HomePage.speak(\'' + c.phrase.replace(/'/g, "\\'") + '\', \'' + c.code + '\')">Озвучить</button>' +
+          '<button class="lt-speak-mini-btn" onclick="HomePage.speak(\'' + c.phrase.replace(/'/g, "\\'") + '\', \'' + c.code + '\')">Озвучить</button>' +
         '</div>' +
       '</div>'
     ).join('');
 
-    root.innerHTML =
-      '<div class="lt-hero-header">' +
-        '<h1>Изучай языки в ритме живого общения</h1>' +
-        '<p>Выберите курс KR или GB в верхней панели, чтобы открыть словари, грамматику и практику</p>' +
-      '</div>' +
-      '<div class="lt-showcase-grid">' + cardsHtml + '</div>';
+    root.innerHTML = '<div class="lt-showcase-grid">' + cardsHtml + '</div>';
   },
 
   renderCourseHub(root, lang) {
     const isKo = lang === 'ko';
+    document.body.classList.remove('theme-ko', 'theme-en');
+    document.body.classList.add(isKo ? 'theme-ko' : 'theme-en');
+
     const title = isKo ? 'Курс корейского языка (KR)' : 'Курс английского языка (GB)';
 
     const learnItems = [
@@ -65,11 +65,11 @@ window.HomePage = {
     ];
 
     const renderGroup = (heading, list) =>
-      '<div style="margin-bottom:22px;">' +
-        '<div style="font-size:0.78rem; text-transform:uppercase; letter-spacing:1px; color:#f87171; font-weight:700; margin-bottom:10px;">' + heading + '</div>' +
-        '<div style="display:flex; flex-direction:column; gap:8px;">' +
+      '<div style="margin-bottom:20px;">' +
+        '<div style="font-size:0.76rem; text-transform:uppercase; letter-spacing:1px; color:#f87171; font-weight:700; margin-bottom:8px;">' + heading + '</div>' +
+        '<div style="display:flex; flex-direction:column; gap:7px;">' +
           list.map(it =>
-            '<button class="lt-glass-drop-item" style="background:rgba(16,18,26,0.78); border:1px solid rgba(255,255,255,0.12); padding:13px 16px;" ' +
+            '<button class="lt-glass-drop-item" style="background:rgba(12,14,20,0.82); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.14); padding:12px 15px;" ' +
               (it.onClick ? 'onclick="' + it.onClick + '"' : '') + '>' +
               '<span class="lt-glass-drop-title">' + it.title + (it.soon ? ' <span style="color:#f87171; font-size:0.72rem;">[Скоро]</span>' : '') + '</span>' +
               '<span class="lt-glass-drop-sub">' + it.desc + '</span>' +
@@ -79,10 +79,10 @@ window.HomePage = {
       '</div>';
 
     root.innerHTML =
-      '<div style="max-width:620px; margin:0 auto;">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">' +
-          '<h2 style="font-size:1.35rem;">' + title + '</h2>' +
-          '<button class="lt-btn-secondary" onclick="Router.go(\'home\')">На витрину</button>' +
+      '<div style="width:100%; max-width:580px; margin:0 auto;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; background:rgba(12,14,20,0.82); padding:12px 16px; border:1px solid rgba(220,38,38,0.5);">' +
+          '<h2 style="font-size:1.2rem;">' + title + '</h2>' +
+          '<button class="lt-btn-secondary" style="padding:6px 12px;" onclick="Router.go(\'home\')">На витрину</button>' +
         '</div>' +
         renderGroup('Обучение', learnItems) +
         renderGroup('Практика и сообщество', practiceItems) +
