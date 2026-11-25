@@ -1,8 +1,8 @@
 /* === ЯДРО ОБЛАЧНОЙ БАЗЫ И АВТОРИЗАЦИИ (firebase.js) === */
 (function () {
   const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBfwQFDIK2O2JBtmem5XtLNne6fTxdxQM",
-    authDomain: "://firebaseapp.com",
+    apiKey: "AIzaSyBfwQFDiKZO2JBtnwn5XltLNne6fTxdwGM",
+    authDomain: "lingvo-trainer-d5aab.firebaseapp.com",
     projectId: "lingvo-trainer-d5aab",
     storageBucket: "lingvo-trainer-d5aab.firebasestorage.app",
     messagingSenderId: "42810725807",
