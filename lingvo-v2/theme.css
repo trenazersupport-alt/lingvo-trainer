@@ -343,3 +343,10 @@ body.theme-en {
 .lt-mini-action:hover { color:#fff; }
 .lt-club-row { display:flex; align-items:center; gap:9px; padding:6px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); }
 .lt-club-hash { width:24px; height:24px; background:rgba(220,38,38,0.16); border:1px solid rgba(220,38,38,0.5); color:#f87171; display:flex; align-items:center; justify-content:center; font-weight:800; }
+/* === РАСШИРЕНИЕ СЕТКИ ПРОФИЛЯ НА ШИРОКИЙ ЭКРАН === */
+.lt-main { max-width: 1520px; padding: 18px 28px; justify-content: flex-start; }
+.lt-showcase-grid { margin: auto; }
+.lt-prof-wrap { max-width: 100%; }
+.lt-prof-cover { height: 195px; }
+.lt-prof-grid { grid-template-columns: 310px 1fr 300px; gap: 18px; }
+.lt-prof-box { padding: 18px; }
