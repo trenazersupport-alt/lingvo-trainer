@@ -105,4 +105,28 @@ window.AuthUI = {
     ]);
   }
 };
+GlassUI.closeModal = function () {
+  const old = document.getElementById('ltDynamicGlassModal');
+  if (old) old.remove();
+};
+
+GlassUI.openModal = function (title, bodyHtml, footerHtml) {
+  this.closeModal();
+  const overlay = document.createElement('div');
+  overlay.id = 'ltDynamicGlassModal';
+  overlay.className = 'lt-modal-overlay';
+  overlay.onclick = function (e) { if (e.target === overlay) GlassUI.closeModal(); };
+
+  overlay.innerHTML =
+    '<div class="lt-glass-modal lt-true-glass">' +
+      '<div class="lt-modal-head">' +
+        '<h3>' + title + '</h3>' +
+        '<button type="button" class="lt-close-btn" onclick="GlassUI.closeModal()">✕</button>' +
+      '</div>' +
+      '<div style="margin-bottom:14px;">' + bodyHtml + '</div>' +
+      (footerHtml ? '<div class="lt-btn-row">' + footerHtml + '</div>' : '') +
+    '</div>';
+
+  document.body.appendChild(overlay);
+};
 
