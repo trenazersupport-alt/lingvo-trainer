@@ -350,3 +350,63 @@ body.theme-en {
 .lt-prof-cover { height: 195px; }
 .lt-prof-grid { grid-template-columns: 310px 1fr 300px; gap: 18px; }
 .lt-prof-box { padding: 18px; }
+/* === ИСПРАВЛЕНИЕ МАТОВЫХ ОКОН, ЛАЙКОВ И ПОВОРОТА СТРЕЛОК === */
+.lt-arrow-toggle .lt-arr,
+.lt-account-btn .lt-arrow-glyph {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.lt-arrow-toggle.is-open,
+.lt-account-btn.is-open {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.22) !important;
+  color: #fff !important;
+}
+
+.lt-arrow-toggle.is-open .lt-arr,
+.lt-account-btn.is-open .lt-arrow-glyph {
+  transform: rotate(180deg);
+}
+
+.lt-glass-dropdown {
+  background: rgba(16, 18, 26, 0.72) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(220, 38, 38, 0.7) !important;
+}
+
+/* Убираем зазор между сердечком и окном "Оценили запись", чтобы мышка не теряла фокус */
+.lt-like-hover-wrap {
+  position: relative;
+  display: inline-block;
+  padding-top: 8px;
+  margin-top: -8px;
+}
+
+.lt-glass-popover {
+  display: block !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 0;
+  min-width: 175px;
+  background: rgba(16, 18, 26, 0.72) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(220, 38, 38, 0.7) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+  padding: 9px 12px;
+  z-index: 90;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.lt-like-hover-wrap:hover .lt-glass-popover,
+.lt-glass-popover:hover {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
