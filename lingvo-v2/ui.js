@@ -7,22 +7,30 @@ window.AppState = window.AppState || {
 };
 
 window.GlassUI = {
+  activeAnchor: null,
+
   closeDropdown() {
     const old = document.getElementById('ltActiveGlassDropdown');
     if (old) old.remove();
+    if (this.activeAnchor) {
+      this.activeAnchor.classList.remove('is-open');
+      this.activeAnchor = null;
+    }
   },
 
   toggleDropdown(anchorEl, items) {
-    const existing = document.getElementById('ltActiveGlassDropdown');
-    if (existing) {
-      existing.remove();
-      return;
-    }
+    const wasSame = this.activeAnchor === anchorEl && document.getElementById('ltActiveGlassDropdown');
+    this.closeDropdown();
+    if (wasSame) return;
+
+    this.activeAnchor = anchorEl;
+    anchorEl.classList.add('is-open');
+
     const rect = anchorEl.getBoundingClientRect();
     const menu = document.createElement('div');
     menu.id = 'ltActiveGlassDropdown';
     menu.className = 'lt-glass-dropdown';
-    menu.style.top = (rect.bottom + 6) + 'px';
+    menu.style.top = (rect.bottom + 5) + 'px';
     menu.style.right = Math.max(12, window.innerWidth - rect.right) + 'px';
 
     items.forEach(function (it) {
@@ -45,7 +53,7 @@ window.GlassUI = {
 };
 
 document.addEventListener('click', function (e) {
-  if (!e.target.closest('#ltActiveGlassDropdown') && !e.target.closest('#topAccountBtn')) {
+  if (!e.target.closest('#ltActiveGlassDropdown') && !e.target.closest('.lt-arrow-toggle') && !e.target.closest('#topAccountBtn')) {
     GlassUI.closeDropdown();
   }
 });
@@ -97,3 +105,4 @@ window.AuthUI = {
     ]);
   }
 };
+
