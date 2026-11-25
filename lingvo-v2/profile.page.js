@@ -226,7 +226,7 @@ window.ProfilePage = {
 
         '<div id="postText_' + p.id + '" style="font-size:0.88rem; color:#f3f4f6; line-height:1.45; margin-bottom:10px; white-space:pre-wrap;">' + (p.text || '') + '</div>' +
         (p.wordNote ? '<div style="border-left:2px solid #dc2626; padding:5px 10px; background:rgba(220,38,38,0.1); font-size:0.82rem; color:#fca5a5; margin-bottom:10px;">' + p.wordNote + '</div>' : '') +
-
+        (p.imageUrl ? '<div style="margin-bottom:10px;"><img src="' + p.imageUrl + '" style="max-width:100%; max-height:360px; border:1px solid rgba(255,255,255,0.12);" /></div>' : '') +
         '<div style="display:flex; justify-content:flex-end; gap:16px; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px; position:relative;">' +
           '<div class="lt-like-hover-wrap">' +
             '<button class="lt-link-btn" style="text-decoration:none; color:' + (isLiked ? '#ef4444' : '#9ca3af') + '; font-weight:700;" onclick="ProfilePage.toggleLike(\'' + p.id + '\')">♡ ' + likes.length + '</button>' +
