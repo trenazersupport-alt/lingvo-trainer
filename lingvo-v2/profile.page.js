@@ -311,21 +311,31 @@ window.ProfilePage = {
     if (drawer) drawer.style.display = 'block';
   },
 
-  openPostMenu(btn, postId, canManage) {
+   openPostMenu(btn, postId, canManage) {
     const items = [
-      { title: 'Поделиться', sub: 'Отправить другу или в диалог', onClick: () => alert('Выбор получателя из списка друзей откроется в модуле Чаты!') }
+      {
+        title: 'Поделиться',
+        sub: 'Отправить другу или в диалог',
+        onClick: () => {
+          const friends = (AppState.profile && AppState.profile.friends) || [];
+          const listHtml = friends.length
+            ? friends.map(uid => {
+                const u = this.cachedUsersMap[uid];
+                return '<div class="lt-glass-drop-item" style="border:1px solid rgba(255,255,255,0.1); margin-bottom:6px;" onclick="GlassUI.closeModal()">' +
+                  '<span class="lt-glass-drop-title">' + (u ? u.nick : 'Друг') + '</span>' +
+                  '<span class="lt-glass-drop-sub">Отправить запись в личные сообщения</span>' +
+                '</div>';
+              }).join('')
+            : '<p class="lt-muted-text">У вас пока нет добавленных друзей. Добавьте участников из блока «Возможные друзья» справа, чтобы делиться с ними записями.</p>';
+          GlassUI.openModal('Поделиться записью', listHtml, '<button class="lt-btn-secondary" onclick="GlassUI.closeModal()">Закрыть</button>');
+        }
+      }
     ];
+
     if (canManage) {
       items.unshift({
         title: 'Редактировать запись',
-        onClick: async () => {
-          const el = document.getElementById('postText_' + postId);
-          const next = prompt('Редактировать текст записи:', el ? el.textContent : '');
-          if (next !== null && next.trim()) {
-            await window.fbDb.collection('posts').doc(postId).update({ text: next.trim() });
-            Router.renderCurrent();
-          }
-        }
+        onClick: () => this.startInlineEdit(postId)
       });
       items.push({
         title: 'Удалить запись',
@@ -334,6 +344,28 @@ window.ProfilePage = {
       });
     }
     GlassUI.toggleDropdown(btn, items);
+  },
+
+  startInlineEdit(postId) {
+    const el = document.getElementById('postText_' + postId);
+    if (!el || el.dataset.editing === '1') return;
+    const oldText = el.textContent;
+    el.dataset.editing = '1';
+    el.innerHTML =
+      '<textarea id="editArea_' + postId + '" class="lt-post-textarea" style="min-height:70px; margin-bottom:8px;">' + oldText + '</textarea>' +
+      '<div style="display:flex; justify-content:flex-end; gap:8px;">' +
+        '<button class="lt-btn-secondary" style="padding:5px 12px; font-size:0.78rem;" onclick="Router.renderCurrent()">Отмена</button>' +
+        '<button class="lt-btn-primary" style="padding:5px 14px; font-size:0.78rem;" onclick="ProfilePage.saveInlineEdit(\'' + postId + '\')">Сохранить</button>' +
+      '</div>';
+  },
+
+  async saveInlineEdit(postId) {
+    const area = document.getElementById('editArea_' + postId);
+    if (!area) return;
+    const next = area.value.trim();
+    if (!next) return;
+    await window.fbDb.collection('posts').doc(postId).update({ text: next });
+    Router.renderCurrent();
   },
 
   async publishPost() {
@@ -372,7 +404,7 @@ window.ProfilePage = {
     Router.renderCurrent();
   },
 
-   async addFriend(targetUid) {
+  async addFriend(targetUid) {
     if (!AppState.user) return;
     const myRef = window.fbDb.collection('users').doc(AppState.user.uid);
     const current = AppState.profile.friends || [];
@@ -390,19 +422,34 @@ window.ProfilePage = {
         title: 'Карточка слова (KO / EN)',
         sub: 'Прикрепить слово с переводом к посту',
         onClick: () => {
-          const phrase = prompt('Введите слово и перевод (например: 사랑 (саран) — любовь):');
-          if (phrase && phrase.trim()) {
-            const inp = document.getElementById('newPostText');
-            const box = document.getElementById('postWordAttachBox');
-            inp.dataset.wordNote = phrase.trim();
-            box.style.display = 'block';
-            box.textContent = 'Прикреплённое слово: ' + phrase.trim();
-          }
+          GlassUI.openModal(
+            'Прикрепить карточку слова',
+            '<label class="lt-label">Слово, транскрипция и перевод</label>' +
+            '<input type="text" id="modalWordInput" class="lt-input" placeholder="Например: 사랑 [саран] — любовь" />',
+            '<button class="lt-btn-secondary" onclick="GlassUI.closeModal()">Отмена</button>' +
+            '<button class="lt-btn-primary" onclick="ProfilePage.confirmWordAttach()">Прикрепить</button>'
+          );
         }
       },
-      { title: 'Картинка или видео', sub: 'Доступно после подключения альбомов', onClick: () => alert('Прикрепление фото и видео заработает после подключения модуля Альбомы!') }
+      {
+        title: 'Картинка или видео',
+        sub: 'Выбор из альбомов или загрузка файла',
+        onClick: () => GlassUI.openModal('Медиавложения', '<p class="lt-muted-text">Выбор фото и видео из ваших альбомов подключится сразу при сборке модуля <strong>Альбомы</strong>.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Понятно</button>')
+      }
     ]);
   },
+
+  confirmWordAttach() {
+    const val = (document.getElementById('modalWordInput').value || '').trim();
+    if (!val) return;
+    const inp = document.getElementById('newPostText');
+    const box = document.getElementById('postWordAttachBox');
+    inp.dataset.wordNote = val;
+    box.style.display = 'block';
+    box.textContent = 'Прикреплённое слово: ' + val;
+    GlassUI.closeModal();
+  },
+
   openSectionsMenu(btn) {
     GlassUI.toggleDropdown(btn, [
       { title: 'Курсы (KR / GB)', sub: 'Слова, грамматика и практика', onClick: () => Router.go('courses') },
@@ -413,7 +460,7 @@ window.ProfilePage = {
     ]);
   },
 
-   openCoverMenu(btn) {
+  openCoverMenu(btn) {
     GlassUI.toggleDropdown(btn, [
       { title: 'Загрузить обложку с устройства', sub: 'Выберите изображение с компьютера или телефона', onClick: () => this.changePhoto('cover') }
     ]);
@@ -425,9 +472,8 @@ window.ProfilePage = {
     inp.type = 'file';
     inp.accept = 'image/*';
     inp.onchange = function (e) {
-      const file = e.target.files && e.target.files[0];
+      const file = e.target.files && e.target.files;
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function (ev) {
         const img = new Image();
@@ -453,11 +499,11 @@ window.ProfilePage = {
   },
 
   openLearnedModal(targetUid, isOwner) {
-    if (isOwner) {
-      alert('Сводный словарь изученных слов откроется сразу после подключения учебного модуля courses.page.js!');
-    } else {
-      alert('Окно просмотра изученных слов гостя (озвучка, микрофон, забрать слово себе) подключим вместе с учебным модулем!');
-    }
+    const title = isOwner ? 'Мой сводный словарь изученных слов' : 'Изученные слова пользователя';
+    GlassUI.openModal(
+      title,
+      '<p class="lt-muted-text">Здесь будут отображаться все выученные слова KO и EN с кнопкой озвучки, тренировкой голоса и возможностью забрать слово себе.</p>',
+      '<button class="lt-btn-primary" onclick="Router.go(\'courses\'); GlassUI.closeModal();">Перейти к курсам</button>'
+    );
   }
 };
-
