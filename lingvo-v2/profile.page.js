@@ -368,18 +368,20 @@ window.ProfilePage = {
     Router.renderCurrent();
   },
 
-  async publishPost() {
+    async publishPost() {
     if (!AppState.user) return;
     const inp = document.getElementById('newPostText');
     const text = (inp.value || '').trim();
     const wordNote = inp.dataset.wordNote || '';
-    if (!text && !wordNote) return;
+    const imageUrl = inp.dataset.imageUrl || '';
+    if (!text && !wordNote && !imageUrl) return;
 
     await window.fbDb.collection('posts').add({
       authorUid: AppState.user.uid,
       authorNick: AppState.profile.nick || 'Ученик',
       text: text,
       wordNote: wordNote,
+      imageUrl: imageUrl,
       likes: [],
       comments: [],
       createdAtMs: Date.now()
@@ -432,9 +434,9 @@ window.ProfilePage = {
         }
       },
       {
-        title: 'Картинка или видео',
-        sub: 'Выбор из альбомов или загрузка файла',
-        onClick: () => GlassUI.openModal('Медиавложения', '<p class="lt-muted-text">Выбор фото и видео из ваших альбомов подключится сразу при сборке модуля <strong>Альбомы</strong>.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Понятно</button>')
+        title: 'Фото или конспект с устройства',
+        sub: 'Выбрать картинку с компьютера или телефона',
+        onClick: () => this.attachPostImage()
       }
     ]);
   },
@@ -445,9 +447,60 @@ window.ProfilePage = {
     const inp = document.getElementById('newPostText');
     const box = document.getElementById('postWordAttachBox');
     inp.dataset.wordNote = val;
-    box.style.display = 'block';
-    box.textContent = 'Прикреплённое слово: ' + val;
+    box.style.display = 'flex';
+    box.style.justifyContent = 'space-between';
+    box.style.alignItems = 'center';
+    box.innerHTML = '<span>Прикреплённое слово: <strong>' + val + '</strong></span>' +
+      '<button type="button" class="lt-close-btn" style="font-size:0.85rem;" onclick="ProfilePage.clearAttachments()">✕</button>';
     GlassUI.closeModal();
+  },
+
+  attachPostImage() {
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file';
+    fileInp.accept = 'image/*';
+    fileInp.onchange = function (e) {
+      const file = e.target.files && e.target.files.item(0);
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const img = new Image();
+        img.onload = function () {
+          const maxW = 900;
+          const scale = Math.min(1, maxW / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const inp = document.getElementById('newPostText');
+          const box = document.getElementById('postWordAttachBox');
+          inp.dataset.imageUrl = dataUrl;
+          box.style.display = 'flex';
+          box.style.justifyContent = 'space-between';
+          box.style.alignItems = 'center';
+          box.innerHTML = '<span>Прикреплено фото: <strong>' + file.name + '</strong></span>' +
+            '<button type="button" class="lt-close-btn" style="font-size:0.85rem;" onclick="ProfilePage.clearAttachments()">✕</button>';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    fileInp.click();
+  },
+
+  clearAttachments() {
+    const inp = document.getElementById('newPostText');
+    const box = document.getElementById('postWordAttachBox');
+    if (inp) {
+      inp.dataset.wordNote = '';
+      inp.dataset.imageUrl = '';
+    }
+    if (box) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+    }
   },
 
   openSectionsMenu(btn) {
@@ -472,7 +525,7 @@ window.ProfilePage = {
     inp.type = 'file';
     inp.accept = 'image/*';
     inp.onchange = function (e) {
-      const file = e.target.files && e.target.files;
+      const file = e.target.files && e.target.files.item(0);
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (ev) {
