@@ -413,20 +413,43 @@ window.ProfilePage = {
     ]);
   },
 
-  openCoverMenu(btn) {
+   openCoverMenu(btn) {
     GlassUI.toggleDropdown(btn, [
-      { title: 'Изменить обложку по ссылке', sub: 'Вставьте URL изображения', onClick: () => this.changePhoto('cover') }
+      { title: 'Загрузить обложку с устройства', sub: 'Выберите изображение с компьютера или телефона', onClick: () => this.changePhoto('cover') }
     ]);
   },
 
-  async changePhoto(type) {
+  changePhoto(type) {
     if (!AppState.user) return;
-    const url = prompt(type === 'avatar' ? 'Вставьте прямую ссылку на фото аватара (https://...):' : 'Вставьте прямую ссылку на обложку (https://...):');
-    if (!url || !url.trim()) return;
-    const field = type === 'avatar' ? 'avatarUrl' : 'coverUrl';
-    await window.fbDb.collection('users').doc(AppState.user.uid).update({ [field]: url.trim() });
-    AppState.profile[field] = url.trim();
-    Router.renderCurrent();
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.onchange = function (e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const img = new Image();
+        img.onload = async function () {
+          const maxW = type === 'avatar' ? 320 : 1200;
+          const scale = Math.min(1, maxW / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const field = type === 'avatar' ? 'avatarUrl' : 'coverUrl';
+          await window.fbDb.collection('users').doc(AppState.user.uid).update({ [field]: dataUrl });
+          AppState.profile[field] = dataUrl;
+          Router.renderCurrent();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    inp.click();
   },
 
   openLearnedModal(targetUid, isOwner) {
