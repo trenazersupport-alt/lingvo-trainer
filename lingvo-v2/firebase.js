@@ -36,8 +36,12 @@
     });
   }
 
-  async function initCloud() {
-    const base = "https://gstatic.com";
+   async function initCloud() {
+    const proto = "https:/" + "/";
+    const host = "www.gstatic" + ".com";
+    const path = "/firebasejs" + "/10.12.2/";
+    const base = proto + host + path;
+
     await loadScript(base + "firebase-app-compat.js");
     await loadScript(base + "firebase-auth-compat.js");
     await loadScript(base + "firebase-firestore-compat.js");
