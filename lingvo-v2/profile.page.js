@@ -124,10 +124,24 @@ window.ProfilePage = {
                 '</div>' +
               '</div>' +
 
-              '<div class="lt-prof-box">' +
+                           '<div class="lt-prof-box">' +
                 '<div class="lt-box-title is-link" onclick="Router.go(\'friends\', { tab: \'friends\', uid: \'' + targetUid + '\' })"><span>Друзья</span><span style="color:#9ca3af;">(' + myFriends.length + ')</span></div>' +
-                '<div style="font-size:0.78rem; color:#9ca3af;">' + (myFriends.length ? 'Друзей в списке: ' + myFriends.length : 'Список друзей пока пуст') + '</div>' +
+                (myFriends.length
+                  ? '<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">' +
+                      myFriends.slice(0, 6).map(fUid => {
+                        const fu = this.cachedUsersMap[fUid];
+                        if (!fu) return '';
+                        return '<div style="text-align:center; cursor:pointer;" onclick="Router.go(\'profile\', { uid: \'' + fUid + '\' })">' +
+                          '<div style="width:44px; height:44px; margin:0 auto 4px; background:#1f222d; border:1px solid rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-weight:800; overflow:hidden;">' +
+                            (fu.avatarUrl ? '<img src="' + fu.avatarUrl + '" style="width:100%; height:100%; object-fit:cover;" />' : (fu.nick || 'U').charAt(0).toUpperCase()) +
+                          '</div>' +
+                          '<div style="font-size:0.72rem; color:#e5e7eb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (fu.nick || 'Друг') + '</div>' +
+                        '</div>';
+                      }).join('') +
+                    '</div>'
+                  : '<div style="font-size:0.78rem; color:#9ca3af;">Список друзей пока пуст</div>') +
               '</div>' +
+        +
 
               '<div class="lt-prof-box">' +
                 '<div class="lt-box-title is-link" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\' })"><span>Альбомы</span><span style="color:#9ca3af;">→</span></div>' +
