@@ -16,7 +16,9 @@ window.FriendsPage = {
         '</div>';
       return;
     }
-
+    if (!params._keepSearch) {
+      this.searchQuery = '';
+    }
     root.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">Загрузка списка пользователей...</div>';
 
     try {
@@ -120,7 +122,7 @@ window.FriendsPage = {
           '<div class="lt-fr-body">' +
             /* ЛЕВАЯ ШИРОКАЯ КОЛОНКА: СПИСОК + ПАГИНАЦИЯ « » */
             '<div class="lt-fr-left">' +
-              '<input type="text" autocomplete="off" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
+             '<input type="search" name="lt_friend_filter" autocomplete="new-password" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
               '<div class="lt-fr-list">' + rowsHtml + '</div>' +
               '<div class="lt-fr-pager">' +
                 '<button class="lt-icon-btn" ' + (this.pageIndex === 0 ? 'disabled style="opacity:0.4;"' : '') + ' onclick="FriendsPage.prevPage()">«</button>' +
@@ -200,26 +202,18 @@ window.FriendsPage = {
     Router.renderCurrent();
   },
 
-  async acceptRequest(fromUid) {
-    if (!AppState.user) return;
-    const myUid = AppState.user.uid;
-    const myRef = window.fbDb.collection('users').doc(myUid);
-    const fromRef = window.fbDb.collection('users').doc(fromUid);
+  const myFriends = Array.from(new Set([...(myData.friends || []), fromUid]));
+ const myIn = (myData.friendRequests || []).filter(id => id !== fromUid);
+ const myOut = (myData.outgoingRequests || []).filter(id => id !== fromUid);
 
-    const [mySnap, fromSnap] = await Promise.all([myRef.get(), fromRef.get()]);
-    const myData = mySnap.data();
-    const fromData = fromSnap.exists ? fromSnap.data() : {};
+ const fromFriends = Array.from(new Set([...(fromData.friends || []), myUid]));
+ const fromOut = (fromData.outgoingRequests || []).filter(id => id !== myUid);
+ const fromIn = (fromData.friendRequests || []).filter(id => id !== myUid);
 
-    const myFriends = Array.from(new Set([...(myData.friends || []), fromUid]));
-    const myIn = (myData.friendRequests || []).filter(id => id !== fromUid);
-
-    const fromFriends = Array.from(new Set([...(fromData.friends || []), myUid]));
-    const fromOut = (fromData.outgoingRequests || []).filter(id => id !== myUid);
-
-    await Promise.all([
-      myRef.update({ friends: myFriends, friendRequests: myIn }),
-      fromRef.update({ friends: fromFriends, outgoingRequests: fromOut })
-    ]);
+ await Promise.all([
+   myRef.update({ friends: myFriends, friendRequests: myIn, outgoingRequests: myOut }),
+   fromRef.update({ friends: fromFriends, outgoingRequests: fromOut, friendRequests: fromIn })
+ ]);
     AppState.profile.friends = myFriends;
     AppState.profile.friendRequests = myIn;
     Router.renderCurrent();
