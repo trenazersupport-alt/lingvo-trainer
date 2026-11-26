@@ -118,7 +118,7 @@ window.FriendsPage = {
           '<div class="lt-fr-body">' +
             /* ЛЕВАЯ ШИРОКАЯ КОЛОНКА: СПИСОК + ПАГИНАЦИЯ « » */
             '<div class="lt-fr-left">' +
-              '<input type="text" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
+              '<input type="text" autocomplete="off" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
               '<div class="lt-fr-list">' + rowsHtml + '</div>' +
               '<div class="lt-fr-pager">' +
                 '<button class="lt-icon-btn" ' + (this.pageIndex === 0 ? 'disabled style="opacity:0.4;"' : '') + ' onclick="FriendsPage.prevPage()">«</button>' +
@@ -170,7 +170,7 @@ window.FriendsPage = {
     );
   },
 
-  switchTab(tab) { this.activeTab = tab; this.pageIndex = 0; Router.renderCurrent(); },
+  switchTab(tab) { this._manualTab = true; this.activeTab = tab; this.pageIndex = 0; Router.renderCurrent(); },
   onSearch(val) { this.searchQuery = val; this.pageIndex = 0; Router.renderCurrent(); },
   prevPage() { if (this.pageIndex > 0) { this.pageIndex--; Router.renderCurrent(); } },
   nextPage(max) { if (this.pageIndex < max - 1) { this.pageIndex++; Router.renderCurrent(); } },
