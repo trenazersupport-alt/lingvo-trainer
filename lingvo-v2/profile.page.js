@@ -52,7 +52,10 @@ window.ProfilePage = {
       const rankPos = Math.max(1, sortedByXp.findIndex(u => u.uid === targetUid) + 1);
 
       const myFriends = prof.friends || [];
-      const suggested = allUsers.filter(u => u.uid !== targetUid && !myFriends.includes(u.uid)).slice(0, 4);
+      const outgoingReqs = prof.outgoingRequests || [];
+      const incomingReqs = prof.friendRequests || [];
+      const excludeSugg = new Set([targetUid, ...myFriends, ...outgoingReqs, ...incomingReqs]);
+      const suggested = allUsers.filter(u => !excludeSugg.has(u.uid)).slice(0, 4);
       const priv = prof.privacy || { showBirthday: true, showCity: true, showEmail: true, allowComments: true };
 
       const avatarHtml = prof.avatarUrl
