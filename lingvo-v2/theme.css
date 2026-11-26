@@ -426,4 +426,97 @@ body.theme-en {
   border: 1px solid rgba(220, 38, 38, 0.75) !important;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65) !important;
 }
+/* === СТИЛИ РАЗДЕЛА ДРУЗЬЯ (friends.page.js) === */
+.lt-fr-shell {
+  width: 100%;
+  background: rgba(14, 15, 21, 0.88);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 16px 20px;
+}
+
+.lt-fr-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lt-fr-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.lt-fr-tab {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #d1d5db;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lt-fr-tab:hover, .lt-fr-tab.active {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.2);
+  color: #fff;
+}
+
+.lt-fr-badge {
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.68rem;
+  padding: 1px 6px;
+}
+
+.lt-fr-body {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 18px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .lt-fr-body { grid-template-columns: 1fr; }
+}
+
+.lt-fr-left, .lt-fr-right {
+  background: rgba(10, 11, 16, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lt-fr-list { flex: 1; display: flex; flex-direction: column; }
+
+.lt-fr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.lt-fr-row:hover { background: rgba(255, 255, 255, 0.03); }
+
+.lt-fr-pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lt-fr-sugg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
 
