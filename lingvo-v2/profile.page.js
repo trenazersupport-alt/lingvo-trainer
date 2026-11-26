@@ -406,15 +406,23 @@ window.ProfilePage = {
     Router.renderCurrent();
   },
 
+  renderFriendActionBtn(targetUid) {
+    const me = AppState.profile || {};
+    if ((me.friends || []).includes(targetUid)) {
+      return '<button class="lt-btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="FriendsPage.removeFriend(\'' + targetUid + '\')">✓ В друзьях</button>';
+    }
+    if ((me.outgoingRequests || []).includes(targetUid)) {
+      return '<button class="lt-btn-secondary" style="padding:6px 12px; font-size:0.8rem; opacity:0.75;" disabled>Заявка отправлена</button>';
+    }
+    if ((me.friendRequests || []).includes(targetUid)) {
+      return '<button class="lt-btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="FriendsPage.acceptRequest(\'' + targetUid + '\')">Принять заявку</button>';
+    }
+    return '<button class="lt-btn-primary" style="padding:6px 12px; font-size:0.8rem;" onclick="ProfilePage.addFriend(\'' + targetUid + '\')">+ Добавить в друзья</button>';
+  },
+
   async addFriend(targetUid) {
-    if (!AppState.user) return;
-    const myRef = window.fbDb.collection('users').doc(AppState.user.uid);
-    const current = AppState.profile.friends || [];
-    if (!current.includes(targetUid)) {
-      const updated = [...current, targetUid];
-      await myRef.update({ friends: updated });
-      AppState.profile.friends = updated;
-      Router.renderCurrent();
+    if (window.FriendsPage) {
+      await FriendsPage.sendRequest(targetUid);
     }
   },
 
