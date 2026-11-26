@@ -141,7 +141,6 @@ window.ProfilePage = {
                     '</div>'
                   : '<div style="font-size:0.78rem; color:#9ca3af;">Список друзей пока пуст</div>') +
               '</div>' +
-        +
 
               '<div class="lt-prof-box">' +
                 '<div class="lt-box-title is-link" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\' })"><span>Альбомы</span><span style="color:#9ca3af;">→</span></div>' +
