@@ -17,11 +17,6 @@ window.FriendsPage = {
       return;
     }
 
-    if (params.tab) {
-      this.activeTab = params.tab === 'friends' ? 'all' : params.tab;
-      this.pageIndex = 0;
-    }
-
     root.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">Загрузка списка пользователей...</div>';
 
     try {
@@ -45,6 +40,12 @@ window.FriendsPage = {
       const incomingReqs = me.friendRequests || [];
       const outgoingReqs = me.outgoingRequests || [];
 
+      if (params.tab) {
+        this.activeTab = params.tab === 'friends' ? 'all' : params.tab;
+        this.pageIndex = 0;
+      } else if (incomingReqs.length > 0 && this.activeTab === 'all' && !this._manualTab) {
+        this.activeTab = 'requests';
+      }
       // Формируем список для левой колонки в зависимости от вкладки
       let listUsers = [];
       if (this.activeTab === 'all') {
