@@ -5,11 +5,12 @@ window.AlbumsPage = {
   viewerList: [],
   viewerIndex: 0,
 
-  defaultAlbums: [
+     defaultAlbums: [
     { id: 'avatars', title: 'Фото профиля', system: true },
     { id: 'wall', title: 'Фото со стены', system: true },
     { id: 'saved', title: 'Сохранённые фото', system: true },
-    { id: 'covers', title: 'Обложки', system: true }
+    { id: 'covers', title: 'Обложки', system: true },
+    { id: 'notes', title: 'Конспекты', system: false }
   ],
 
   async fetchUserPhotos(targetUid) {
@@ -245,8 +246,6 @@ window.AlbumsPage = {
     this.viewerIndex = (idx + this.viewerList.length) % this.viewerList.length;
     const ph = this.viewerList[this.viewerIndex];
     const isOwner = AppState.user && AppState.user.uid === ph.ownerUid;
-    const canDelete = isOwner || AppState.isAdmin;
-    const canEditCaption = isOwner && ph.albumId !== 'avatars';
 
     this.closeViewer();
     const overlay = document.createElement('div');
@@ -254,19 +253,30 @@ window.AlbumsPage = {
     overlay.className = 'lt-modal-overlay';
     overlay.onclick = function (e) { if (e.target === overlay) AlbumsPage.closeViewer(); };
 
+    const ownerAvatar = (isOwner && AppState.profile && AppState.profile.avatarUrl)
+      ? '<img src="' + AppState.profile.avatarUrl + '" style="width:32px; height:32px; object-fit:cover; border:1px solid rgba(255,255,255,0.16);" />'
+      : '<div style="width:32px; height:32px; background:#1f222d; border:1px solid rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; font-weight:800;">' + (ph.ownerNick || 'U').charAt(0).toUpperCase() + '</div>';
+
     const comments = ph.comments || [];
     const commentsHtml = comments.length
-      ? comments.map((c, cIdx) =>
-          '<div class="lt-comment-item" style="margin-bottom:6px;">' +
-            '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-              '<strong style="font-size:0.78rem; color:#fff;">' + (c.nick || 'Ученик') + '</strong>' +
-              (canDelete || (AppState.user && AppState.user.uid === c.uid)
-                ? '<button class="lt-mini-action" onclick="AlbumsPage.deletePhotoComment(' + cIdx + ')">✕</button>'
-                : '') +
-            '</div>' +
-            '<div style="font-size:0.8rem; color:#e5e7eb; margin-top:2px;">' + c.text + '</div>' +
-          '</div>'
-        ).join('')
+      ? comments.map((c, cIdx) => {
+          const cLikes = c.likes || [];
+          const cLiked = AppState.user && cLikes.includes(AppState.user.uid);
+          return (
+            '<div class="lt-comment-item" style="margin-bottom:6px;">' +
+              '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                '<strong style="font-size:0.78rem; color:#fff; cursor:pointer;" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + c.uid + '\' });">' + (c.nick || 'Ученик') + '</strong>' +
+                '<div style="display:flex; gap:8px; align-items:center;">' +
+                  '<button class="lt-mini-action" style="color:' + (cLiked ? '#ef4444' : '#9ca3af') + ';" onclick="AlbumsPage.togglePhotoCommentLike(' + cIdx + ')">♡ ' + cLikes.length + '</button>' +
+                  '<button class="lt-arrow-toggle" style="padding:1px 7px; font-size:0.72rem;" onclick="AlbumsPage.openCommentMenu(this, ' + cIdx + ')"><span class="lt-arr">▾</span></button>' +
+                '</div>' +
+              '</div>' +
+              '<div id="pvCommentBody_' + cIdx + '" style="font-size:0.8rem; color:#e5e7eb; margin-top:3px;">' + c.text + '</div>' +
+              (c.attachNote ? '<div style="border-left:2px solid #dc2626; padding:3px 7px; margin-top:4px; font-size:0.74rem; color:#fca5a5;">' + c.attachNote + '</div>' : '') +
+              (c.attachImg ? '<div style="margin-top:5px;"><img src="' + c.attachImg + '" style="max-width:140px; max-height:110px; border:1px solid rgba(255,255,255,0.14);" /></div>' : '') +
+            '</div>'
+          );
+        }).join('')
       : '<div style="font-size:0.78rem; color:#9ca3af;">Комментариев пока нет.</div>';
 
     overlay.innerHTML =
@@ -274,6 +284,47 @@ window.AlbumsPage = {
         '<button class="lt-icon-btn lt-pv-nav" onclick="AlbumsPage.openViewer(' + (this.viewerIndex - 1) + ')">«</button>' +
 
         '<div class="lt-pv-box lt-true-glass">' +
+          '<div class="lt-pv-left">' +
+            '<div class="lt-pv-img-stage"><img src="' + ph.url + '" /></div>' +
+            '<div class="lt-pv-bottom-bar">' +
+              '<span style="font-size:0.76rem; color:#9ca3af;">Фото ' + (this.viewerIndex + 1) + ' из ' + this.viewerList.length + '</span>' +
+              '<button class="lt-arrow-toggle" style="padding:5px 11px;" title="Действия с фото" onclick="AlbumsPage.openPhotoActions(this)"><span class="lt-arr">▾</span></button>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="lt-pv-right">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' +
+              '<div style="display:flex; align-items:center; gap:9px; cursor:pointer;" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + ph.ownerUid + '\' });">' +
+                ownerAvatar +
+                '<strong style="font-size:0.88rem; color:#fff;">' + (ph.ownerNick || 'Ученик') + '</strong>' +
+              '</div>' +
+              '<button class="lt-close-btn" onclick="AlbumsPage.closeViewer()">✕</button>' +
+            '</div>' +
+
+            '<div id="pvCaptionBox" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.84rem; color:#e5e7eb;">' +
+              (ph.caption ? ph.caption : '<span style="color:#9ca3af;">Без описания</span>') +
+            '</div>' +
+
+            '<div style="flex:1; overflow-y:auto; padding:10px 0;">' + commentsHtml + '</div>' +
+
+            (AppState.user
+              ? '<div style="padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">' +
+                  '<textarea id="pvCommentInp" class="lt-post-textarea" style="min-height:48px; margin-bottom:6px;" placeholder="Написать комментарий..."></textarea>' +
+                  '<div id="pvCommentAttachPreview" style="display:none; font-size:0.74rem; color:#fca5a5; margin-bottom:6px;"></div>' +
+                  '<div style="display:flex; justify-content:flex-end; gap:6px; align-items:center;">' +
+                    '<button class="lt-arrow-toggle" style="padding:5px 9px;" title="Добавить вложение" onclick="AlbumsPage.openNewCommentAttach(this)"><span class="lt-arr">▾</span></button>' +
+                    '<button class="lt-btn-primary" style="padding:5px 14px; font-size:0.78rem;" onclick="AlbumsPage.addPhotoComment()">Отправить</button>' +
+                  '</div>' +
+                '</div>'
+              : '') +
+          '</div>' +
+        '</div>' +
+
+        '<button class="lt-icon-btn lt-pv-nav" onclick="AlbumsPage.openViewer(' + (this.viewerIndex + 1) + ')">»</button>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+  },
           /* ЛЕВАЯ ЧАСТЬ: ФОТО + ВЫПАДАЮЩЕЕ МЕНЮ ПОД НИМ */
           '<div class="lt-pv-left">' +
             '<div class="lt-pv-img-stage"><img src="' + ph.url + '" /></div>' +
