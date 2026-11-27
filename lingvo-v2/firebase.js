@@ -164,6 +164,11 @@
         AppState.user = user;
         AppState.isAdmin = (user.email || "").toLowerCase() === ADMIN_EMAIL;
         AppState.profile = await CloudAuth.ensureUserProfile(user);
+                const pingOnline = () => db.collection("users").doc(user.uid).update({ lastSeenMs: Date.now() }).catch(() => {});
+        pingOnline();
+        if (!window._ltOnlineTimer) {
+          window._ltOnlineTimer = setInterval(pingOnline, 120000);
+        }
 
         if (btn) btn.classList.add("is-auth");
         if (lbl) lbl.textContent = AppState.profile.nick;
