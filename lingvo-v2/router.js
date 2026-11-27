@@ -62,6 +62,7 @@ window.Router = {
     if (page === 'support' && window.SupportPage) return SupportPage.render(root, params);
     if (page === 'profile' && window.ProfilePage) return ProfilePage.render(root, params);
     if (page === 'friends' && window.FriendsPage) return FriendsPage.render(root, params);
+        if (page === 'albums' && window.AlbumsPage) return AlbumsPage.render(root, params);
 
     root.innerHTML =
       '<div class="lt-glass-modal" style="max-width:560px; margin:20px auto;">' +
