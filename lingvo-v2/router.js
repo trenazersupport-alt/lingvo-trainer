@@ -1,18 +1,18 @@
 /* === НАВИГАЦИЯ И ИСТОРИЯ ПЕРЕХОДОВ (router.js) === */
 window.Router = {
-  historyStack: [],
+   historyStack: [],
   historyIndex: -1,
   currentRoute: { page: 'home', params: {} },
 
   go(page, params = {}, skipPush = false) {
     this.currentRoute = { page, params };
+    sessionStorage.setItem('lt_saved_route', JSON.stringify(this.currentRoute));
 
     if (!skipPush) {
       this.historyStack = this.historyStack.slice(0, this.historyIndex + 1);
       this.historyStack.push({ page, params });
       this.historyIndex = this.historyStack.length - 1;
     }
-
     this.updateNavButtons();
     this.renderCurrent();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -74,5 +74,14 @@ window.Router = {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('lt_saved_route');
+  if (saved) {
+    try {
+      const { page, params } = JSON.parse(saved);
+      Router.go(page || 'home', params || {});
+      return;
+    } catch (e) {}
+  }
   Router.go('home');
 });
+
