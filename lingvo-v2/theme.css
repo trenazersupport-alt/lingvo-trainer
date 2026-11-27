@@ -519,4 +519,29 @@ body.theme-en {
   padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
+/* === СТИЛИ АЛЬБОМОВ И ДВУХОКОННОГО ПРОСМОТРЩИКА (albums.page.js) === */
+.lt-alb-shell { width:100%; background:rgba(14,15,21,0.88); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,0.14); padding:18px 22px; }
+.lt-alb-carousel { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.lt-alb-row { flex:1; display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.lt-alb-card { position:relative; height:125px; background:#191c26; background-size:cover; background-position:center; border:1px solid rgba(255,255,255,0.15); cursor:pointer; display:flex; align-items:flex-end; transition:border-color 0.2s; }
+.lt-alb-card:hover, .lt-alb-card.active { border-color:#dc2626; box-shadow:0 0 14px rgba(220,38,38,0.3); }
+.lt-alb-overlay { width:100%; background:linear-gradient(transparent, rgba(0,0,0,0.88)); padding:18px 10px 8px; }
+.lt-alb-title { font-size:0.86rem; font-weight:700; color:#fff; }
+.lt-alb-count { font-size:0.7rem; color:#9ca3af; }
+.lt-photo-grid-top { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:12px; }
+.lt-photo-tile-lg { height:210px; background:#181a24; background-size:cover; background-position:center; border:1px solid rgba(255,255,255,0.12); cursor:pointer; }
+.lt-photo-grid-sm { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+.lt-photo-tile-sm { height:150px; background:#181a24; background-size:cover; background-position:center; border:1px solid rgba(255,255,255,0.12); cursor:pointer; }
+.lt-photo-tile-lg:hover, .lt-photo-tile-sm:hover { border-color:#dc2626; }
+
+/* ДВУХОКОННЫЙ ПРОСМОТРЩИК ФОТО */
+.lt-pv-wrap { display:flex; align-items:center; gap:12px; width:100%; max-width:1040px; }
+.lt-pv-nav { height:48px; padding:0 14px; font-size:1.1rem; }
+.lt-pv-box { flex:1; display:grid; grid-template-columns:1.35fr 1fr; height:540px; max-height:86vh; overflow:hidden; }
+@media (max-width:820px) { .lt-pv-box { grid-template-columns:1fr; height:auto; } }
+.lt-pv-left { display:flex; flex-direction:column; background:rgba(8,9,13,0.75); border-right:1px solid rgba(255,255,255,0.1); }
+.lt-pv-img-stage { flex:1; display:flex; align-items:center; justify-content:center; padding:12px; overflow:hidden; }
+.lt-pv-img-stage img { max-width:100%; max-height:100%; object-fit:contain; }
+.lt-pv-bottom-bar { display:flex; justify-content:space-between; align-items:center; padding:8px 14px; border-top:1px solid rgba(255,255,255,0.08); }
+.lt-pv-right { display:flex; flex-direction:column; padding:14px; overflow:hidden; }
 
