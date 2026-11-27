@@ -26,12 +26,16 @@ window.GlassUI = {
     this.activeAnchor = anchorEl;
     anchorEl.classList.add('is-open');
 
-    const rect = anchorEl.getBoundingClientRect();
-    const menu = document.createElement('div');
-    menu.id = 'ltActiveGlassDropdown';
-    menu.className = 'lt-glass-dropdown';
-    menu.style.top = (rect.bottom + 5) + 'px';
-    menu.style.right = Math.max(12, window.innerWidth - rect.right) + 'px';
+   const rect = anchorEl.getBoundingClientRect();
+ const menu = document.createElement('div');
+ menu.id = 'ltActiveGlassDropdown';
+ menu.className = 'lt-glass-dropdown';
+ menu.style.right = Math.max(12, window.innerWidth - rect.right) + 'px';
+ if (window.innerHeight - rect.bottom < 220) {
+   menu.style.bottom = (window.innerHeight - rect.top + 5) + 'px';
+ } else {
+   menu.style.top = (rect.bottom + 5) + 'px';
+ }
 
     items.forEach(function (it) {
       const btn = document.createElement('button');
