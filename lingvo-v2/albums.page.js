@@ -325,49 +325,7 @@ window.AlbumsPage = {
 
     document.body.appendChild(overlay);
   },
-          /* ЛЕВАЯ ЧАСТЬ: ФОТО + ВЫПАДАЮЩЕЕ МЕНЮ ПОД НИМ */
-          '<div class="lt-pv-left">' +
-            '<div class="lt-pv-img-stage"><img src="' + ph.url + '" /></div>' +
-            '<div class="lt-pv-bottom-bar">' +
-              '<span style="font-size:0.76rem; color:#9ca3af;">Фото ' + (this.viewerIndex + 1) + ' из ' + this.viewerList.length + '</span>' +
-              '<button class="lt-arrow-toggle" onclick="AlbumsPage.openPhotoActions(this)">Действия <span class="lt-arr">▾</span></button>' +
-            '</div>' +
-          '</div>' +
-
-          /* ПРАВАЯ ЧАСТЬ: ВЛАДЕЛЕЦ, ОПИСАНИЕ, КОММЕНТАРИИ */
-          '<div class="lt-pv-right">' +
-            '<div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' +
-              '<div style="display:flex; align-items:center; gap:9px; cursor:pointer;" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + ph.ownerUid + '\' });">' +
-                '<div style="width:32px; height:32px; background:#1f222d; border:1px solid rgba(255,255,255,0.16); display:flex; align-items:center; justify-content:center; font-weight:800;">' + (ph.ownerNick || 'U').charAt(0).toUpperCase() + '</div>' +
-                '<strong style="font-size:0.88rem; color:#fff;">' + (ph.ownerNick || 'Ученик') + '</strong>' +
-              '</div>' +
-              '<button class="lt-close-btn" onclick="AlbumsPage.closeViewer()">✕</button>' +
-            '</div>' +
-
-            '<div id="pvCaptionBox" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.84rem; color:#e5e7eb;">' +
-              (ph.caption ? ph.caption : '<span style="color:#9ca3af;">Без описания</span>') +
-              (canEditCaption ? ' <button class="lt-link-btn" style="margin-left:6px; font-size:0.74rem;" onclick="AlbumsPage.editCaption()">Изменить</button>' : '') +
-            '</div>' +
-
-            '<div style="flex:1; overflow-y:auto; padding:10px 0;">' + commentsHtml + '</div>' +
-
-            (AppState.user
-              ? '<div style="padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">' +
-                  '<textarea id="pvCommentInp" class="lt-post-textarea" style="min-height:48px; margin-bottom:6px;" placeholder="Написать комментарий..."></textarea>' +
-                  '<div style="display:flex; justify-content:flex-end;">' +
-                    '<button class="lt-btn-primary" style="padding:5px 12px; font-size:0.76rem;" onclick="AlbumsPage.addPhotoComment()">Отправить</button>' +
-                  '</div>' +
-                '</div>'
-              : '') +
-          '</div>' +
-        '</div>' +
-
-        '<button class="lt-icon-btn lt-pv-nav" onclick="AlbumsPage.openViewer(' + (this.viewerIndex + 1) + ')">»</button>' +
-      '</div>';
-
-    document.body.appendChild(overlay);
-  },
-
+        
    openCommentMenu(btn, cIdx) {
     const ph = this.viewerList[this.viewerIndex];
     const c = (ph.comments || []).at(cIdx);
