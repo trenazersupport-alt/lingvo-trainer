@@ -40,9 +40,18 @@ window.FriendsPage = {
         usersMap[u.uid] = u;
       });
 
-      const myFriends = me.friends || [];
-      const incomingReqs = me.friendRequests || [];
-      const outgoingReqs = me.outgoingRequests || [];
+           const myFriends = me.friends || [];
+      const rawIn = me.friendRequests || [];
+      const rawOut = me.outgoingRequests || [];
+      const incomingReqs = rawIn.filter(id => !myFriends.includes(id));
+      const outgoingReqs = rawOut.filter(id => !myFriends.includes(id));
+
+      if (incomingReqs.length !== rawIn.length || outgoingReqs.length !== rawOut.length) {
+        window.fbDb.collection('users').doc(AppState.user.uid).update({
+          friendRequests: incomingReqs,
+          outgoingRequests: outgoingReqs
+        }).catch(() => {});
+      }
 
       if (params.tab && params.tab !== 'friends') {
         this.activeTab = params.tab;
