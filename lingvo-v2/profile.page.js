@@ -145,12 +145,12 @@ window.ProfilePage = {
                   : '<div style="font-size:0.78rem; color:#9ca3af;">Список друзей пока пуст</div>') +
               '</div>' +
 
-              '<div class="lt-prof-box">' +
+                           '<div class="lt-prof-box">' +
                 '<div class="lt-box-title is-link" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\' })"><span>Альбомы</span><span style="color:#9ca3af;">→</span></div>' +
                 '<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;">' +
-                  '<div class="lt-album-mini" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'avatars\' })">Фото профиля</div>' +
-                  '<div class="lt-album-mini" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'covers\' })">Обложки</div>' +
-                  '<div class="lt-album-mini" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'notes\' })">Конспекты</div>' +
+                  '<div class="lt-album-mini" style="' + (prof.avatarUrl ? 'background-image:linear-gradient(transparent, rgba(0,0,0,0.82)), url(\'' + prof.avatarUrl + '\'); background-size:cover; background-position:center; align-items:flex-end;' : '') + '" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'avatars\' })">Фото профиля</div>' +
+                  '<div class="lt-album-mini" style="' + (prof.coverUrl ? 'background-image:linear-gradient(transparent, rgba(0,0,0,0.82)), url(\'' + prof.coverUrl + '\'); background-size:cover; background-position:center; align-items:flex-end;' : '') + '" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'covers\' })">Обложки</div>' +
+                  '<div class="lt-album-mini" style="' + ((posts.find(p => p.imageUrl) || {}).imageUrl ? 'background-image:linear-gradient(transparent, rgba(0,0,0,0.82)), url(\'' + posts.find(p => p.imageUrl).imageUrl + '\'); background-size:cover; background-position:center; align-items:flex-end;' : '') + '" onclick="Router.go(\'albums\', { uid: \'' + targetUid + '\', album: \'wall\' })">Фото со стены</div>' +
                 '</div>' +
               '</div>' +
             '</div>' +
