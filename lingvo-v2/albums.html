@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    background-color: #121212;
+    color: #fff;
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+
+  /* Основной контейнер модального окна / страницы */
+  .gallery-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #181818;
+    border: 1px solid #2c2c2c;
+    padding: 20px;
+    border-radius: 6px;
+  }
+
+  /* Шапка с заголовком и кнопкой сброса */
+  .gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .btn {
+    background: #2b2b2b;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .btn:hover { background: #3a3a3a; }
+  .btn.active { background: #4a4a4a; border-color: #777; }
+
+  /* Секция альбомов (верхний блок) */
+  .albums-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2c2c2c;
+  }
+
+  .albums-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    width: 100%;
+  }
+
+  .album-card {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: 0.2s;
+  }
+  .album-card:hover { border-color: #666; }
+  .album-card.selected { border-color: #e5a93c; }
+
+  /* Обложка альбома занимает всю область */
+  .album-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Название альбома поверх обложки (как на 1-м скриншоте) */
+  .album-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 25px 12px 10px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  }
+  .album-title { font-weight: bold; font-size: 14px; }
+  .album-count { font-size: 12px; color: #bbb; }
+
+  /* Стрелки навигации альбомов */
+  .nav-arrow {
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .nav-arrow.prev { margin-right: 10px; }
+  .nav-arrow.next { margin-left: 10px; }
+
+  /* СЕТКА ФОТОГРАФИЙ (как на 2-м макете) */
+  /* Используем 12 колонок: 
+     - Первые 3 фото занимают по 4 колонки (12 / 4 = 3 крупных квадрата в ряд)
+     - Остальные фото занимают по 3 колонки (12 / 3 = 4 квадрата поменьше в ряд) */
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 15px;
+  }
+
+  .photo-item {
+    grid-column: span 3; /* По умолчанию 4 в ряд (меньший размер) */
+    aspect-ratio: 1 / 1; /* Строгий квадрат */
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Первые 3 фотографии (самые новые) — крупные (3 в ряд) */
+  .photo-item:nth-child(1),
+  .photo-item:nth-child(2),
+  .photo-item:nth-child(3) {
+    grid-column: span 4;
+  }
+
+  .photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s;
+  }
+  .photo-item:hover img {
+    transform: scale(1.03);
+  }
+</style>
+</head>
+<body>
+
+<div class="gallery-container">
+  <!-- Шапка -->
+  <div class="gallery-header">
+    <div class="header-left">
+      <h3 id="current-view-title" style="margin: 0;">Все фотографии</h3>
+      <button id="show-all-btn" class="btn active" onclick="selectAlbum(null)">Показать все фото</button>
+    </div>
+    <button class="btn">+ Создать альбом</button>
+  </div>
+
+  <!-- Блок альбомов -->
+  <div class="albums-wrapper">
+    <button class="nav-arrow prev" title="Назад">&laquo;</button>
+    <div class="albums-grid" id="albums-container"></div>
+    <button class="nav-arrow next" title="Вперед">&raquo;</button>
+  </div>
+
+  <!-- Блок фотографий (3 крупных сверху + 4 мелких снизу) -->
+  <div class="photos-grid" id="photos-container"></div>
+</div>
+
+<script>
+  // Пример данных (отсортированы по дате: чем больше timestamp, тем новее фото)
+  const albums = [
+    { id: 'profile', title: 'Фото профиля' },
+    { id: 'wall', title: 'Фото со стены' },
+    { id: 'saved', title: 'Сохранённые фото' }
+  ];
+
+  const allPhotos = [
+    { id: 1, albumId: 'profile', url: 'https://picsum.photos', addedAt: 1732710000 }, // Последняя добавленная
+    { id: 2, albumId: 'wall',    url: 'https://picsum.photos', addedAt: 1732705000 }, // Предпоследняя
+    { id: 3, albumId: 'wall',    url: 'https://picsum.photos', addedAt: 1732700000 }, // 3-я с конца
+    { id: 4, albumId: 'saved',   url: 'https://picsum.photos', addedAt: 1732690000 }, // Пойдет во 2-й ряд (мелкий квадрат)
+    { id: 5, albumId: 'profile', url: 'https://picsum.photos',  addedAt: 1732680000 },
+    { id: 6, albumId: 'saved',   url: 'https://picsum.photos',  addedAt: 1732670000 },
+    { id: 7, albumId: 'wall',    url: 'https://picsum.photos',  addedAt: 1732660000 }
+  ];
+
+  let selectedAlbumId = null;
+
+  // Функция отрисовки альбомов
+  function renderAlbums() {
+    const container = document.getElementById('albums-container');
+    container.innerHTML = '';
+
+    albums.forEach(album => {
+      // Находим все фото этого альбома и сортируем от новых к старым
+      const albumPhotos = allPhotos
+        .filter(p => p.albumId === album.id)
+        .sort((a, b) => b.addedAt - a.addedAt);
+
+      // Обложка = последняя добавленная фотография в этот альбом
+      const coverUrl = albumPhotos.length > 0 ? albumPhotos[0].url : '';
+      const isSelected = selectedAlbumId === album.id ? 'selected' : '';
+
+      const card = document.createElement('div');
+      card.className = `album-card ${isSelected}`;
+      card.onclick = () => selectAlbum(album.id);
+
+      card.innerHTML = `
+        ${coverUrl ? `<img src="${coverUrl}" alt="${album.title}">` : ''}
+        <div class="album-info">
+          <div class="album-title">${album.title}</div>
+          <div class="album-count">${albumPhotos.length} фото</div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  // Функция отрисовки фотографий
+  function renderPhotos() {
+    const container = document.getElementById('photos-container');
+    container.innerHTML = '';
+
+    // 1. Если альбом не выбран — берем ВСЕ фото, иначе — только выбранного альбома
+    let filtered = selectedAlbumId 
+      ? allPhotos.filter(p => p.albumId === selectedAlbumId)
+      : [...allPhotos];
+
+    // 2. Сортируем: последняя добавленная всегда первая (сверху слева)
+    filtered.sort((a, b) => b.addedAt - a.addedAt);
+
+    // 3. Отрисовываем сетку
+    filtered.forEach(photo => {
+      const item = document.createElement('div');
+      item.className = 'photo-item';
+      item.innerHTML = `<img src="${photo.url}" alt="Фото">`;
+      container.appendChild(item);
+    });
+  }
+
+  // Переключение альбома
+  function selectAlbum(albumId) {
+    selectedAlbumId = albumId;
+    
+    const titleEl = document.getElementById('current-view-title');
+    const showAllBtn = document.getElementById('show-all-btn');
+
+    if (albumId === null) {
+      titleEl.textContent = 'Все фотографии';
+      showAllBtn.classList.add('active');
+    } else {
+      const album = albums.find(a => a.id === albumId);
+      titleEl.textContent = `Альбом: ${album.title}`;
+      showAllBtn.classList.remove('active');
+    }
+
+    renderAlbums();
+    renderPhotos();
+  }
+
+  // Инициализация при открытии страницы (ни один альбом не выбран)
+  renderAlbums();
+  renderPhotos();
+</script>
+
+</body>
+</html>
