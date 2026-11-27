@@ -245,7 +245,8 @@ window.AlbumsPage = {
     if (!this.viewerList || !this.viewerList.length) return;
     this.viewerIndex = (idx + this.viewerList.length) % this.viewerList.length;
     const ph = this.viewerList[this.viewerIndex];
-    const isOwner = AppState.user && AppState.user.uid === ph.ownerUid;
+     const curUser = AppState.user || (window.fbAuth && window.fbAuth.currentUser);
+ const isOwner = curUser && curUser.uid === ph.ownerUid;
 
     this.closeViewer();
     const overlay = document.createElement('div');
