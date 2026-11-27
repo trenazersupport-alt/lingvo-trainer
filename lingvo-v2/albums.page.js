@@ -308,7 +308,7 @@ window.AlbumsPage = {
 
             '<div style="flex:1; overflow-y:auto; padding:10px 0;">' + commentsHtml + '</div>' +
 
-            (AppState.user
+          (curUser
               ? '<div style="padding-top:8px; border-top:1px solid rgba(255,255,255,0.1);">' +
                   '<textarea id="pvCommentInp" class="lt-post-textarea" style="min-height:48px; margin-bottom:6px;" placeholder="Написать комментарий..."></textarea>' +
                   '<div id="pvCommentAttachPreview" style="display:none; font-size:0.74rem; color:#fca5a5; margin-bottom:6px;"></div>' +
