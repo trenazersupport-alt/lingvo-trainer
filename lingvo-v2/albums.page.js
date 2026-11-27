@@ -368,50 +368,215 @@ window.AlbumsPage = {
     document.body.appendChild(overlay);
   },
 
+   openCommentMenu(btn, cIdx) {
+    const ph = this.viewerList[this.viewerIndex];
+    const c = (ph.comments || []).at(cIdx);
+    if (!c) return;
+
+    const myUid = AppState.user ? AppState.user.uid : '';
+    const isCommentAuthor = myUid && myUid === c.uid;
+    const isPageOwner = myUid && myUid === ph.ownerUid;
+    const items = [];
+
+    if (isCommentAuthor) {
+      items.push({
+        title: 'Редактировать комментарий',
+        onClick: () => {
+          const box = document.getElementById('pvCommentBody_' + cIdx);
+          if (!box) return;
+          box.innerHTML =
+            '<input type="text" id="pvEditCInp_' + cIdx + '" class="lt-input" style="margin:4px 0; padding:5px 8px; font-size:0.8rem;" value="' + c.text + '" />' +
+            '<button class="lt-btn-primary" style="padding:3px 10px; font-size:0.72rem;" onclick="AlbumsPage.saveEditedComment(' + cIdx + ')">Сохранить</button>';
+        }
+      });
+      items.push({
+        title: 'Добавить вложение',
+        sub: 'Прикрепить карточку слова или фото',
+        onClick: () => this.openAttachForExistingComment(cIdx)
+      });
+      items.push({ title: 'Удалить', danger: true, onClick: () => this.deletePhotoComment(cIdx) });
+    } else if (isPageOwner || AppState.isAdmin) {
+      items.push({
+        title: 'Пожаловаться',
+        onClick: () => GlassUI.openModal('Жалоба отправлена', '<p class="lt-muted-text">Жалоба на комментарий передана модератору.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Закрыть</button>')
+      });
+      items.push({ title: 'Удалить', danger: true, onClick: () => this.deletePhotoComment(cIdx) });
+    } else {
+      items.push({
+        title: 'Пожаловаться',
+        onClick: () => GlassUI.openModal('Жалоба отправлена', '<p class="lt-muted-text">Жалоба на комментарий передана модератору.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Закрыть</button>')
+      });
+    }
+    GlassUI.toggleDropdown(btn, items);
+  },
+
+  openAttachForExistingComment(cIdx) {
+    GlassUI.openModal(
+      'Добавить вложение к комментарию',
+      '<label class="lt-label">Карточка слова (KO / EN)</label>' +
+      '<input type="text" id="existCommentWordInp" class="lt-input" placeholder="Например: 사랑 [саран] — любовь" />',
+      '<button class="lt-btn-secondary" onclick="GlassUI.closeModal()">Отмена</button>' +
+      '<button class="lt-btn-primary" onclick="AlbumsPage.saveExistingCommentAttach(' + cIdx + ')">Прикрепить</button>'
+    );
+  },
+
+  async saveExistingCommentAttach(cIdx) {
+    const ph = this.viewerList[this.viewerIndex];
+    const val = (document.getElementById('existCommentWordInp').value || '').trim();
+    if (!val || !ph.comments[cIdx]) return;
+    ph.comments[cIdx].attachNote = val;
+    await this.syncComments(ph);
+    GlassUI.closeModal();
+    this.openViewer(this.viewerIndex);
+  },
+
+  async saveEditedComment(cIdx) {
+    const ph = this.viewerList[this.viewerIndex];
+    const inp = document.getElementById('pvEditCInp_' + cIdx);
+    if (!inp || !inp.value.trim()) return;
+    ph.comments[cIdx].text = inp.value.trim();
+    await this.syncComments(ph);
+    this.openViewer(this.viewerIndex);
+  },
+
+  openNewCommentAttach(btn) {
+    GlassUI.toggleDropdown(btn, [
+      {
+        title: 'Карточка слова (KO / EN)',
+        sub: 'Прикрепить слово с переводом',
+        onClick: () => {
+          GlassUI.openModal(
+            'Прикрепить карточку слова',
+            '<label class="lt-label">Слово и перевод</label>' +
+            '<input type="text" id="newPvWordInp" class="lt-input" placeholder="Например: 사랑 [саран] — любовь" />',
+            '<button class="lt-btn-secondary" onclick="GlassUI.closeModal()">Отмена</button>' +
+            '<button class="lt-btn-primary" onclick="AlbumsPage.confirmNewPvWord()">Прикрепить</button>'
+          );
+        }
+      },
+      {
+        title: 'Фото с устройства',
+        sub: 'Выбрать картинку с компьютера или телефона',
+        onClick: () => this.attachNewPvPhoto()
+      }
+    ]);
+  },
+
+  confirmNewPvWord() {
+    const val = (document.getElementById('newPvWordInp').value || '').trim();
+    const inp = document.getElementById('pvCommentInp');
+    const prev = document.getElementById('pvCommentAttachPreview');
+    if (val && inp && prev) {
+      inp.dataset.attachNote = val;
+      prev.style.display = 'block';
+      prev.textContent = 'Вложение: ' + val;
+    }
+    GlassUI.closeModal();
+  },
+
+  attachNewPvPhoto() {
+    const f = document.createElement('input');
+    f.type = 'file';
+    f.accept = 'image/*';
+    f.onchange = function (e) {
+      const file = e.target.files && e.target.files.item(0);
+      if (!file) return;
+      const r = new FileReader();
+      r.onload = function (ev) {
+        const img = new Image();
+        img.onload = function () {
+          const sc = Math.min(1, 500 / img.width);
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * sc);
+          c.height = Math.round(img.height * sc);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          const inp = document.getElementById('pvCommentInp');
+          const prev = document.getElementById('pvCommentAttachPreview');
+          if (inp && prev) {
+            inp.dataset.attachImg = c.toDataURL('image/jpeg', 0.8);
+            prev.style.display = 'block';
+            prev.textContent = 'Прикреплено фото: ' + file.name;
+          }
+        };
+        img.src = ev.target.result;
+      };
+      r.readAsDataURL(file);
+    };
+    f.click();
+  },
+
   openPhotoActions(btn) {
     const ph = this.viewerList[this.viewerIndex];
     const isOwner = AppState.user && AppState.user.uid === ph.ownerUid;
     const canDelete = isOwner || AppState.isAdmin;
+    const canEditCaption = isOwner && ph.albumId !== 'avatars';
     const items = [];
 
-    if (AppState.user && ph.albumId !== 'saved') {
+    if (!isOwner) {
+      if (AppState.user && ph.albumId !== 'saved') {
+        items.push({
+          title: 'Сохранить в «Сохранённые фото»',
+          sub: 'Добавить снимок в свой альбом',
+          onClick: async () => {
+            await window.fbDb.collection('photos').add({
+              ownerUid: AppState.user.uid,
+              ownerNick: (AppState.profile && AppState.profile.nick) || 'Ученик',
+              albumId: 'saved',
+              url: ph.url,
+              caption: ph.caption || '',
+              comments: [],
+              createdAtMs: Date.now()
+            });
+            GlassUI.openModal('Сохранено', '<p class="lt-muted-text">Фотография добавлена в ваш альбом <strong>«Сохранённые фото»</strong>.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Отлично</button>');
+          }
+        });
+      }
       items.push({
-        title: 'Сохранить в «Сохранённые фото»',
-        sub: 'Добавить снимок в свой альбом',
-        onClick: async () => {
-          await window.fbDb.collection('photos').add({
-            ownerUid: AppState.user.uid,
-            ownerNick: (AppState.profile && AppState.profile.nick) || 'Ученик',
-            albumId: 'saved',
-            url: ph.url,
-            caption: ph.caption || '',
-            comments: [],
-            createdAtMs: Date.now()
-          });
-          GlassUI.openModal('Сохранено', '<p class="lt-muted-text">Фотография добавлена в ваш альбом <strong>«Сохранённые фото»</strong>.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Отлично</button>');
-        }
+        title: 'Пожаловаться на фото',
+        sub: 'Отправить на проверку модератору',
+        onClick: () => GlassUI.openModal('Жалоба отправлена', '<p class="lt-muted-text">Обращение передано модератору платформы.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Закрыть</button>')
       });
-    }
-
-    items.push({
-      title: 'Пожаловаться на фото',
-      sub: 'Отправить на проверку модератору',
-      onClick: () => GlassUI.openModal('Жалоба отправлена', '<p class="lt-muted-text">Обращение передано модератору платформы.</p>', '<button class="lt-btn-primary" onclick="GlassUI.closeModal()">Закрыть</button>')
-    });
-
-    if (canDelete && ph.source === 'photos') {
+    } else {
+      if (canEditCaption) {
+        items.push({ title: 'Редактировать описание', sub: 'Изменить подпись к фотографии', onClick: () => this.editCaption() });
+      }
       items.push({
-        title: 'Удалить фотографию',
-        danger: true,
-        onClick: async () => {
-          await window.fbDb.collection('photos').doc(ph.id).delete();
-          this.closeViewer();
-          Router.renderCurrent();
-        }
+        title: 'Поделиться (на стену / в сообщения)',
+        sub: 'Опубликовать на своей стене',
+        onClick: () => GlassUI.openModal('Поделиться фото', '<p class="lt-muted-text">Опубликовать этот снимок новой записью на вашей стене?</p>', '<button class="lt-btn-secondary" onclick="GlassUI.closeModal()">Отмена</button><button class="lt-btn-primary" onclick="AlbumsPage.repostToWall()">На свою стену</button>')
       });
+      if (canDelete) {
+        items.push({
+          title: 'Удалить фотографию',
+          danger: true,
+          onClick: async () => {
+            if (ph.source === 'photos') await window.fbDb.collection('photos').doc(ph.id).delete();
+            else if (ph.source === 'post' && ph.postId) await window.fbDb.collection('posts').doc(ph.postId).update({ imageUrl: '' });
+            this.closeViewer();
+            Router.renderCurrent();
+          }
+        });
+      }
     }
-
     GlassUI.toggleDropdown(btn, items);
+  },
+
+  async repostToWall() {
+    const ph = this.viewerList[this.viewerIndex];
+    if (!AppState.user || !ph) return;
+    await window.fbDb.collection('posts').add({
+      authorUid: AppState.user.uid,
+      authorNick: (AppState.profile && AppState.profile.nick) || 'Ученик',
+      text: ph.caption || '',
+      wordNote: '',
+      imageUrl: ph.url,
+      likes: [],
+      comments: [],
+      createdAtMs: Date.now()
+    });
+    GlassUI.closeModal();
+    this.closeViewer();
+    Router.go('profile');
   },
 
   editCaption() {
@@ -427,43 +592,46 @@ window.AlbumsPage = {
     const ph = this.viewerList[this.viewerIndex];
     const val = (document.getElementById('pvCapInp').value || '').trim();
     ph.caption = val;
-    if (ph.source === 'photos') {
-      await window.fbDb.collection('photos').doc(ph.id).update({ caption: val });
-    } else if (ph.source === 'post' && ph.postId) {
-      await window.fbDb.collection('posts').doc(ph.postId).update({ text: val });
-    }
+    if (ph.source === 'photos') await window.fbDb.collection('photos').doc(ph.id).update({ caption: val });
+    else if (ph.source === 'post' && ph.postId) await window.fbDb.collection('posts').doc(ph.postId).update({ text: val });
     this.openViewer(this.viewerIndex);
   },
 
-  async addPhotoComment() {
+  async syncComments(ph) {
+    if (ph.source === 'photos') await window.fbDb.collection('photos').doc(ph.id).update({ comments: ph.comments });
+    else if (ph.source === 'post' && ph.postId) await window.fbDb.collection('posts').doc(ph.postId).update({ comments: ph.comments });
+  },
+
+   async addPhotoComment() {
     const ph = this.viewerList[this.viewerIndex];
     const inp = document.getElementById('pvCommentInp');
     const text = (inp.value || '').trim();
-    if (!text) return;
+    const attachNote = inp.dataset.attachNote || '';
+    const attachImg = inp.dataset.attachImg || '';
+    if (!text && !attachNote && !attachImg) return;
 
-    const comments = ph.comments || [];
-    comments.push({ uid: AppState.user.uid, nick: (AppState.profile && AppState.profile.nick) || 'Ученик', text: text });
-    ph.comments = comments;
+    ph.comments = ph.comments || [];
+    ph.comments.push({ uid: AppState.user.uid, nick: (AppState.profile && AppState.profile.nick) || 'Ученик', text, attachNote, attachImg, likes: [] });
+    await this.syncComments(ph);
+    this.openViewer(this.viewerIndex);
+  },
 
-    if (ph.source === 'photos') {
-      await window.fbDb.collection('photos').doc(ph.id).update({ comments });
-    } else if (ph.source === 'post' && ph.postId) {
-      await window.fbDb.collection('posts').doc(ph.postId).update({ comments });
-    }
+  async togglePhotoCommentLike(cIdx) {
+    if (!AppState.user) return;
+    const ph = this.viewerList[this.viewerIndex];
+    const c = (ph.comments || []).at(cIdx);
+    if (!c) return;
+    const likes = c.likes || [];
+    const uid = AppState.user.uid;
+    c.likes = likes.includes(uid) ? likes.filter(id => id !== uid) : [...likes, uid];
+    await this.syncComments(ph);
     this.openViewer(this.viewerIndex);
   },
 
   async deletePhotoComment(idx) {
     const ph = this.viewerList[this.viewerIndex];
-    const comments = ph.comments || [];
-    comments.splice(idx, 1);
-    ph.comments = comments;
-
-    if (ph.source === 'photos') {
-      await window.fbDb.collection('photos').doc(ph.id).update({ comments });
-    } else if (ph.source === 'post' && ph.postId) {
-      await window.fbDb.collection('posts').doc(ph.postId).update({ comments });
-    }
+    (ph.comments || []).splice(idx, 1);
+    await this.syncComments(ph);
     this.openViewer(this.viewerIndex);
   }
 };
