@@ -1,6 +1,6 @@
 /* === РАЗДЕЛ ДРУЗЬЯ, ОНЛАЙН И ЗАЯВКИ (friends.page.js) === */
 window.FriendsPage = {
-  activeTab: 'all', // 'all' | 'online' | 'requests'
+  activeTab: 'all',
   pageIndex: 0,
   pageSize: 10,
   expandedSuggested: false,
@@ -16,9 +16,11 @@ window.FriendsPage = {
         '</div>';
       return;
     }
+
     if (!params._keepSearch) {
       this.searchQuery = '';
     }
+
     root.innerHTML = '<div style="text-align:center; padding:40px; color:#9ca3af;">Загрузка списка пользователей...</div>';
 
     try {
@@ -42,7 +44,7 @@ window.FriendsPage = {
       const incomingReqs = me.friendRequests || [];
       const outgoingReqs = me.outgoingRequests || [];
 
-          if (params.tab && params.tab !== 'friends') {
+      if (params.tab && params.tab !== 'friends') {
         this.activeTab = params.tab;
         this.pageIndex = 0;
       } else if (incomingReqs.length > 0 && !this._manualTab) {
@@ -50,7 +52,7 @@ window.FriendsPage = {
       } else if (params.tab === 'friends') {
         this.activeTab = 'all';
       }
-      // Формируем список для левой колонки в зависимости от вкладки
+
       let listUsers = [];
       if (this.activeTab === 'all') {
         listUsers = myFriends.map(uid => usersMap[uid]).filter(Boolean);
@@ -74,7 +76,6 @@ window.FriendsPage = {
       if (this.pageIndex >= totalPages) this.pageIndex = totalPages - 1;
       const pagedUsers = listUsers.slice(this.pageIndex * this.pageSize, (this.pageIndex + 1) * this.pageSize);
 
-      // Возможные друзья (правая колонка)
       const excludeSet = new Set([AppState.user.uid, ...myFriends, ...incomingReqs, ...outgoingReqs]);
       const suggestedAll = allUsers.filter(u => !excludeSet.has(u.uid));
       const suggestedShown = this.expandedSuggested ? suggestedAll : suggestedAll.slice(0, 6);
@@ -103,10 +104,8 @@ window.FriendsPage = {
             '</div>'
           ).join('')
         : '<div style="font-size:0.8rem; color:#9ca3af; padding:10px 0;">Новых рекомендаций пока нет</div>';
-
       root.innerHTML =
         '<div class="lt-fr-shell">' +
-          /* ВЕРХНЯЯ ПАНЕЛЬ ОКНА: 3 ВКЛАДКИ СЛЕВА + КРЕСТИК ЗАКРЫТИЯ СПРАВА */
           '<div class="lt-fr-top">' +
             '<div class="lt-fr-tabs">' +
               '<button class="lt-fr-tab ' + (this.activeTab === 'all' ? 'active' : '') + '" onclick="FriendsPage.switchTab(\'all\')">Все друзья (' + myFriends.length + ')</button>' +
@@ -118,11 +117,9 @@ window.FriendsPage = {
             '<button class="lt-icon-btn" style="border-color:#dc2626; font-weight:800;" title="Закрыть и вернуться в профиль" onclick="Router.go(\'profile\')">✕</button>' +
           '</div>' +
 
-          /* ДВУХКОЛОНОЧНОЕ ТЕЛО ПО СХЕМЕ */
           '<div class="lt-fr-body">' +
-            /* ЛЕВАЯ ШИРОКАЯ КОЛОНКА: СПИСОК + ПАГИНАЦИЯ « » */
             '<div class="lt-fr-left">' +
-             '<input type="search" name="lt_friend_filter" autocomplete="new-password" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
+              '<input type="search" name="lt_friend_filter" autocomplete="new-password" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
               '<div class="lt-fr-list">' + rowsHtml + '</div>' +
               '<div class="lt-fr-pager">' +
                 '<button class="lt-icon-btn" ' + (this.pageIndex === 0 ? 'disabled style="opacity:0.4;"' : '') + ' onclick="FriendsPage.prevPage()">«</button>' +
@@ -131,7 +128,6 @@ window.FriendsPage = {
               '</div>' +
             '</div>' +
 
-            /* ПРАВАЯ КОЛОНКА: ВОЗМОЖНЫЕ ДРУЗЬЯ + РАЗВЕРНУТЬ */
             '<div class="lt-fr-right">' +
               '<div class="lt-box-title"><span>Возможные друзья</span><span style="color:#9ca3af;">(' + suggestedAll.length + ')</span></div>' +
               '<div style="flex:1; display:flex; flex-direction:column; gap:4px;">' + suggestedHtml + '</div>' +
@@ -175,22 +171,21 @@ window.FriendsPage = {
   },
 
   switchTab(tab) { this._manualTab = true; this.activeTab = tab; this.pageIndex = 0; Router.renderCurrent(); },
-  onSearch(val) { this.searchQuery = val; this.pageIndex = 0; Router.renderCurrent(); },
+  onSearch(val) { this.searchQuery = val; this.pageIndex = 0; Router.go('friends', { _keepSearch: true }, true); },
   prevPage() { if (this.pageIndex > 0) { this.pageIndex--; Router.renderCurrent(); } },
   nextPage(max) { if (this.pageIndex < max - 1) { this.pageIndex++; Router.renderCurrent(); } },
   toggleExpand() { this.expandedSuggested = !this.expandedSuggested; Router.renderCurrent(); },
+
   async sendRequest(targetUid) {
     if (!AppState.user) return;
     const myUid = AppState.user.uid;
     const myRef = window.fbDb.collection('users').doc(myUid);
     const targetRef = window.fbDb.collection('users').doc(targetUid);
-
     const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
     if (!targetSnap.exists) return;
 
     const myOut = mySnap.data().outgoingRequests || [];
     const targetIn = targetSnap.data().friendRequests || [];
-
     if (!myOut.includes(targetUid)) myOut.push(targetUid);
     if (!targetIn.includes(myUid)) targetIn.push(myUid);
 
@@ -202,18 +197,27 @@ window.FriendsPage = {
     Router.renderCurrent();
   },
 
-  const myFriends = Array.from(new Set([...(myData.friends || []), fromUid]));
- const myIn = (myData.friendRequests || []).filter(id => id !== fromUid);
- const myOut = (myData.outgoingRequests || []).filter(id => id !== fromUid);
+  async acceptRequest(fromUid) {
+    if (!AppState.user) return;
+    const myUid = AppState.user.uid;
+    const myRef = window.fbDb.collection('users').doc(myUid);
+    const fromRef = window.fbDb.collection('users').doc(fromUid);
+    const [mySnap, fromSnap] = await Promise.all([myRef.get(), fromRef.get()]);
+    const myData = mySnap.data();
+    const fromData = fromSnap.exists ? fromSnap.data() : {};
 
- const fromFriends = Array.from(new Set([...(fromData.friends || []), myUid]));
- const fromOut = (fromData.outgoingRequests || []).filter(id => id !== myUid);
- const fromIn = (fromData.friendRequests || []).filter(id => id !== myUid);
+    const myFriends = Array.from(new Set([...(myData.friends || []), fromUid]));
+    const myIn = (myData.friendRequests || []).filter(id => id !== fromUid);
+    const myOut = (myData.outgoingRequests || []).filter(id => id !== fromUid);
 
- await Promise.all([
-   myRef.update({ friends: myFriends, friendRequests: myIn, outgoingRequests: myOut }),
-   fromRef.update({ friends: fromFriends, outgoingRequests: fromOut, friendRequests: fromIn })
- ]);
+    const fromFriends = Array.from(new Set([...(fromData.friends || []), myUid]));
+    const fromOut = (fromData.outgoingRequests || []).filter(id => id !== myUid);
+    const fromIn = (fromData.friendRequests || []).filter(id => id !== myUid);
+
+    await Promise.all([
+      myRef.update({ friends: myFriends, friendRequests: myIn, outgoingRequests: myOut }),
+      fromRef.update({ friends: fromFriends, outgoingRequests: fromOut, friendRequests: fromIn })
+    ]);
     AppState.profile.friends = myFriends;
     AppState.profile.friendRequests = myIn;
     Router.renderCurrent();
@@ -224,7 +228,6 @@ window.FriendsPage = {
     const myUid = AppState.user.uid;
     const myRef = window.fbDb.collection('users').doc(myUid);
     const fromRef = window.fbDb.collection('users').doc(fromUid);
-
     const [mySnap, fromSnap] = await Promise.all([myRef.get(), fromRef.get()]);
     const myIn = (mySnap.data().friendRequests || []).filter(id => id !== fromUid);
     const fromOut = fromSnap.exists ? (fromSnap.data().outgoingRequests || []).filter(id => id !== myUid) : [];
@@ -242,7 +245,6 @@ window.FriendsPage = {
     const myUid = AppState.user.uid;
     const myRef = window.fbDb.collection('users').doc(myUid);
     const targetRef = window.fbDb.collection('users').doc(targetUid);
-
     const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
     const myFriends = (mySnap.data().friends || []).filter(id => id !== targetUid);
     const targetFriends = targetSnap.exists ? (targetSnap.data().friends || []).filter(id => id !== myUid) : [];
@@ -255,4 +257,5 @@ window.FriendsPage = {
     Router.renderCurrent();
   }
 };
+
 
