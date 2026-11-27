@@ -128,7 +128,7 @@ window.FriendsPage = {
 
           '<div class="lt-fr-body">' +
             '<div class="lt-fr-left">' +
-              '<input type="search" name="lt_friend_filter" autocomplete="new-password" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
+             '<input type="text" readonly onfocus="this.removeAttribute(\'readonly\')" class="lt-input" style="margin-bottom:10px;" placeholder="Поиск по имени или @нику..." value="' + this.searchQuery + '" oninput="FriendsPage.onSearch(this.value)" />' +
               '<div class="lt-fr-list">' + rowsHtml + '</div>' +
               '<div class="lt-fr-pager">' +
                 '<button class="lt-icon-btn" ' + (this.pageIndex === 0 ? 'disabled style="opacity:0.4;"' : '') + ' onclick="FriendsPage.prevPage()">«</button>' +
