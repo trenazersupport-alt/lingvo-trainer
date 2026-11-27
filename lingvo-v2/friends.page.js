@@ -179,7 +179,7 @@ window.FriendsPage = {
     );
   },
 
-  switchTab(tab) { this._manualTab = true; this.activeTab = tab; this.pageIndex = 0; Router.renderCurrent(); },
+ switchTab(tab) { this._manualTab = true; this.activeTab = tab; this.pageIndex = 0; Router.go('friends', { tab: tab }, true); },
   onSearch(val) { this.searchQuery = val; this.pageIndex = 0; Router.go('friends', { _keepSearch: true }, true); },
   prevPage() { if (this.pageIndex > 0) { this.pageIndex--; Router.renderCurrent(); } },
   nextPage(max) { if (this.pageIndex < max - 1) { this.pageIndex++; Router.renderCurrent(); } },
