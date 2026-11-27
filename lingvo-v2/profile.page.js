@@ -543,7 +543,7 @@ window.ProfilePage = {
     ]);
   },
 
-  changePhoto(type) {
+   changePhoto(type) {
     if (!AppState.user) return;
     const inp = document.createElement('input');
     inp.type = 'file';
@@ -555,16 +555,29 @@ window.ProfilePage = {
       reader.onload = function (ev) {
         const img = new Image();
         img.onload = async function () {
-          const maxW = type === 'avatar' ? 320 : 1200;
+          const maxW = 1100;
           const scale = Math.min(1, maxW / img.width);
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(img.width * scale);
           canvas.height = Math.round(img.height * scale);
           canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
 
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
           const field = type === 'avatar' ? 'avatarUrl' : 'coverUrl';
-          await window.fbDb.collection('users').doc(AppState.user.uid).update({ [field]: dataUrl });
+          const albumId = type === 'avatar' ? 'avatars' : 'covers';
+
+          await Promise.all([
+            window.fbDb.collection('users').doc(AppState.user.uid).update({ [field]: dataUrl }),
+            window.fbDb.collection('photos').add({
+              ownerUid: AppState.user.uid,
+              ownerNick: (AppState.profile && AppState.profile.nick) || 'Ученик',
+              albumId: albumId,
+              url: dataUrl,
+              caption: '',
+              comments: [],
+              createdAtMs: Date.now()
+            })
+          ]);
           AppState.profile[field] = dataUrl;
           Router.renderCurrent();
         };
