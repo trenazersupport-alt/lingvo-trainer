@@ -229,16 +229,16 @@ window.ProfilePage = {
 
     return (
       '<div class="lt-prof-box" id="postCard_' + p.id + '">' +
-        '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">' +
-          '<div style="display:flex; align-items:center; gap:9px;">' +
-            '<div style="width:32px; height:32px; background:#1f222d; border:1px solid rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-weight:800;">' + (p.authorNick || 'U').charAt(0).toUpperCase() + '</div>' +
-            '<div>' +
-              '<div style="font-size:0.85rem; font-weight:700; color:#fff;">' + (p.authorNick || 'Ученик') + '</div>' +
-              '<div style="font-size:0.7rem; color:#9ca3af;">' + dateStr + '</div>' +
-            '</div>' +
+             '<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">' +
+        '<div style="display:flex; align-items:center; gap:9px; cursor:pointer;" onclick="Router.go(\'profile\', { uid: \'' + (p.authorUid || p.uid || '') + '\' })">' +
+          '<div style="width:32px; height:32px; background:#1f222d; border:1px solid rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-weight:800;">' + (p.authorNick || 'U').charAt(0).toUpperCase() + '</div>' +
+          '<div>' +
+            '<div style="font-size:0.85rem; font-weight:700; color:#fff;">' + (p.authorNick || 'Ученик') + '</div>' +
+            '<div style="font-size:0.7rem; color:#9ca3af;">' + dateStr + '</div>' +
           '</div>' +
-          '<button class="lt-arrow-toggle" style="padding:2px 8px;" onclick="ProfilePage.openPostMenu(this, \'' + p.id + '\', ' + canManage + ')"><span class="lt-arr">▾</span></button>' +
         '</div>' +
+        '<button class="lt-arrow-toggle" style="padding:2px 8px;" onclick="ProfilePage.openPostMenu(this, \'' + p.id + '\', ' + canManage + ')"><span class="lt-arr">▾</span></button>' +
+      '</div>' +
 
         '<div id="postText_' + p.id + '" style="font-size:0.88rem; color:#f3f4f6; line-height:1.45; margin-bottom:10px; white-space:pre-wrap;">' + (p.text || '') + '</div>' +
         (p.wordNote ? '<div style="border-left:2px solid #dc2626; padding:5px 10px; background:rgba(220,38,38,0.1); font-size:0.82rem; color:#fca5a5; margin-bottom:10px;">' + p.wordNote + '</div>' : '') +
