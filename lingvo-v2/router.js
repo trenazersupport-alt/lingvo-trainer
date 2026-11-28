@@ -75,13 +75,42 @@ window.Router = {
 
 window.addEventListener('DOMContentLoaded', () => {
   const saved = sessionStorage.getItem('lt_saved_route');
+  let targetPage = 'home';
+  let targetParams = {};
+
   if (saved) {
     try {
-      const { page, params } = JSON.parse(saved);
-      Router.go(page || 'home', params || {});
-      return;
+      const parsed = JSON.parse(saved);
+      targetPage = parsed.page || 'home';
+      targetParams = parsed.params || {};
     } catch (e) {}
   }
-  Router.go('home');
+
+  // Если открываем главную — грузим сразу без ожидания базы
+  if (targetPage === 'home') {
+    Router.go('home', targetParams);
+    return;
+  }
+
+  // Показываем аккуратную загрузку, пока подключается Firebase (db и auth)
+  const container = document.getElementById('app-root') || document.querySelector('main') || document.body;
+  if (container && container !== document.body) {
+    container.innerHTML = '<div style="text-align:center; padding: 80px 20px; color: #aaa; font-size: 16px;">Загрузка данных...</div>';
+  }
+
+  // Ждём готовности базы данных (db) и авторизации (максимум 4 секунды)
+  let attempts = 0;
+  const waitFirebase = setInterval(() => {
+    attempts++;
+    const isDbReady = typeof window.db !== 'undefined' && window.db !== null;
+    const isAuthReady = typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser !== null;
+
+    // Запускаем страницу, как только база и юзер готовы (или через 1.5 сек, если юзер не залогинен)
+    if ((isDbReady && isAuthReady) || (isDbReady && attempts >= 15) || attempts >= 40) {
+      clearInterval(waitFirebase);
+      Router.go(targetPage, targetParams);
+    }
+  }, 100);
 });
+
 
