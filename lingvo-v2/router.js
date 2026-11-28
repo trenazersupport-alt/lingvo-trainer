@@ -86,91 +86,13 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
-  // Если открываем главную — грузим сразу без ожидания базы
+  // Главную страницу рисуем сразу
   if (targetPage === 'home') {
     Router.go('home', targetParams);
     return;
   }
 
-  // Показываем аккуратную загрузку, пока подключается Firebase (db и auth)
-  const container = document.getElementById('app-root') || document.querySelector('main') || document.body;
-  if (container && container !== document.body) {
-    container.innerHTML = '<div style="text-align:center; padding: 80px 20px; color: #aaa; font-size: 16px;">Загрузка данных...</div>';
-  }
-
-  // Ждём готовности базы данных (db) и авторизации (максимум 4 секунды)
-  let attempts = 0;
-  const waitFirebase = setInterval(() => {
-    attempts++;
-    const isDbReady = typeof window.db !== 'undefined' && window.db !== null;
-    const isAuthReady = typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser !== null;
-
-    // Запускаем страницу, как только база и юзер готовы (или через 1.5 сек, если юзер не залогинен)
-    if ((isDbReady && isAuthReady) || (isDbReady && attempts >= 15) || attempts >= 40) {
-      clearInterval(waitFirebase);
-      Router.go(targetPage, targetParams);
-    }
-  }, 100);
-});
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = sessionStorage.getItem('lt_saved_route');
-  let targetPage = 'home';
-  let targetParams = {};
-
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      targetPage = parsed.page || 'home';
-      targetParams = parsed.params || {};
-    } catch (e) {}
-  }
-
-  // Если целевая страница — главная, открываем сразу
-  if (targetPage === 'home') {
-    Router.go('home', targetParams);
-    return;
-  }
-
-  // Прячем мелькание и показываем спокойную загрузку в #appRoot
-  const root = document.getElementById('appRoot');
-  if (root) {
-    root.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; color:#888; font-size:15px;">Загрузка...</div>';
-  }
-
-  // Ждём подключения базы данных и авторизации (проверяем каждые 50 мс)
-  let attempts = 0;
-  const waitReady = setInterval(() => {
-    attempts++;
-    const hasDb = (typeof db !== 'undefined' && db !== null) || (typeof window.db !== 'undefined' && window.db !== null);
-    const hasAuth = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser !== null);
-
-    // Запускаем целевую страницу сразу, как только всё готово (макс. 2.5 сек)
-    if ((hasDb && hasAuth) || (hasDb && attempts >= 20) || attempts >= 50) {
-      clearInterval(waitReady);
-      Router.go(targetPage, targetParams);
-    }
-  }, 50);
-});
-window.addEventListener('DOMContentLoaded', () => {
-  const saved = sessionStorage.getItem('lt_saved_route');
-  let targetPage = 'home';
-  let targetParams = {};
-
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      targetPage = parsed.page || 'home';
-      targetParams = parsed.params || {};
-    } catch (e) {}
-  }
-
-  // Главную страницу рисуем мгновенно
-  if (targetPage === 'home') {
-    Router.go('home', targetParams);
-    return;
-  }
-
-  // Запоминаем целевую страницу для Firebase, но пока не рендерим её без данных
+  // Запоминаем целевой маршрут для Firebase
   Router.currentRoute = { page: targetPage, params: targetParams };
   Router.historyStack = [{ page: targetPage, params: targetParams }];
   Router.historyIndex = 0;
@@ -178,10 +100,27 @@ window.addEventListener('DOMContentLoaded', () => {
     Router.updateNavButtons();
   }
 
-  // Показываем чистую заглушку загрузки, пока Firebase не вызовет Router.renderCurrent()
   const root = document.getElementById('appRoot');
+  const cacheKey = 'lt_html_cache_' + targetPage + '_' + JSON.stringify(targetParams);
+  const cachedHtml = sessionStorage.getItem(cacheKey);
+
   if (root) {
-    root.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; color:#888; font-size:15px;">Загрузка...</div>';
+    if (cachedHtml) {
+      // МГНОВЕННО восстанавливаем картинку страницы без чёрного экрана!
+      root.innerHTML = cachedHtml;
+    } else {
+      // Если открыли впервые и кэша ещё нет — показываем плавную загрузку
+      root.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; color:#888; font-size:15px;">Загрузка...</div>';
+    }
+
+    // Фоново сохраняем актуальный HTML страницы, когда Firebase её догрузит
+    const observer = new MutationObserver(() => {
+      const html = root.innerHTML;
+      if (html && !html.includes('Загрузка') && !html.includes('Войдите в аккаунт') && html.length > 200) {
+        sessionStorage.setItem(cacheKey, html);
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true });
   }
 });
 
