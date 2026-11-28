@@ -295,16 +295,41 @@ window.AlbumsPage = {
 
           '<div class="lt-pv-right">' +
             '<div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' +
-              '<div style="display:flex; align-items:center; gap:9px; cursor:pointer;" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + ph.ownerUid + '\' });">' +
+                    '<div style="display:flex; align-items:center; gap:9px; cursor:pointer;" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + (ph.ownerUid || ph.uid || ph.authorUid || '') + '\' });">' +
                 ownerAvatar +
                 '<strong style="font-size:0.88rem; color:#fff;">' + (ph.ownerNick || 'Ученик') + '</strong>' +
               '</div>' +
               '<button class="lt-close-btn" onclick="AlbumsPage.closeViewer()">✕</button>' +
             '</div>' +
 
-            '<div id="pvCaptionBox" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.84rem; color:#e5e7eb;">' +
-              (ph.caption ? ph.caption : '<span style="color:#9ca3af;">Без описания</span>') +
+                '<div id="pvCaptionBox" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:0.84rem; color:#e5e7eb;">' +
+        (ph.caption ? ph.caption : '<span style="color:#6b7280;">Без описания</span>') +
+      '</div>' +
+      // БЛОК ЛАЙКА ФОТОГРАФИИ С ВСПЛЫВАЮЩИМ СПИСКОМ:
+      (function() {
+        const likes = Array.isArray(ph.likes) ? ph.likes : [];
+        const myUid = AppState.user ? AppState.user.uid : '';
+        const isLiked = myUid && likes.includes(myUid);
+        const likersHtml = likes.length
+          ? likes.map(u => {
+              const info = (typeof AppState.usersMap !== 'undefined' && AppState.usersMap[u]) ? AppState.usersMap[u] : null;
+              const nick = info ? (info.nick || 'Пользователь') : (u === myUid && AppState.profile ? AppState.profile.nick : 'Пользователь');
+              return '<div class="lt-popover-user" onclick="AlbumsPage.closeViewer(); Router.go(\'profile\', { uid: \'' + u + '\' });">' + nick + '</div>';
+            }).join('')
+          : '<div style="font-size:0.74rem; color:#9ca3af;">Пока никто не оценил</div>';
+
+        return '<div style="padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between;">' +
+          '<div class="lt-like-hover-wrap">' +
+            '<button type="button" class="lt-btn-secondary" style="padding:4px 10px; font-size:0.8rem; ' + (isLiked ? 'color:#f43f5e; border-color:rgba(244,63,94,0.4);' : '') + '" onclick="AlbumsPage.togglePhotoLike()">' +
+              (isLiked ? '♥ ' : '♡ ') + likes.length +
+            '</button>' +
+            '<div class="lt-glass-popover">' +
+              '<div style="font-size:0.72rem; color:#9ca3af; margin-bottom:4px;">Оценили фото:</div>' +
+              likersHtml +
             '</div>' +
+          '</div>' +
+        '</div>';
+      })() +
 
             '<div style="flex:1; overflow-y:auto; padding:10px 0;">' + commentsHtml + '</div>' +
 
@@ -592,5 +617,20 @@ window.AlbumsPage = {
     (ph.comments || []).splice(idx, 1);
     await this.syncComments(ph);
     this.openViewer(this.viewerIndex);
-  }
+   },
+    async togglePhotoLike() {
+    if (!AppState.user) return;
+    const ph = this.viewerList[this.viewerIndex];
+    if (!ph) return;
+    const likes = Array.isArray(ph.likes) ? ph.likes : [];
+    const uid = AppState.user.uid;
+    ph.likes = likes.includes(uid) ? likes.filter(id => id !== uid) : [...likes, uid];
+
+    if (ph.source === 'photos') {
+      await window.fbDb.collection('photos').doc(ph.id).update({ likes: ph.likes });
+    } else if (ph.source === 'post' && ph.postId) {
+      await window.fbDb.collection('posts').doc(ph.postId).update({ likes: ph.likes });
+    }
+    this.openViewer(this.viewerIndex);
+  },
 };
