@@ -112,5 +112,44 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 100);
 });
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('lt_saved_route');
+  let targetPage = 'home';
+  let targetParams = {};
+
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      targetPage = parsed.page || 'home';
+      targetParams = parsed.params || {};
+    } catch (e) {}
+  }
+
+  // Если целевая страница — главная, открываем сразу
+  if (targetPage === 'home') {
+    Router.go('home', targetParams);
+    return;
+  }
+
+  // Прячем мелькание и показываем спокойную загрузку в #appRoot
+  const root = document.getElementById('appRoot');
+  if (root) {
+    root.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; color:#888; font-size:15px;">Загрузка...</div>';
+  }
+
+  // Ждём подключения базы данных и авторизации (проверяем каждые 50 мс)
+  let attempts = 0;
+  const waitReady = setInterval(() => {
+    attempts++;
+    const hasDb = (typeof db !== 'undefined' && db !== null) || (typeof window.db !== 'undefined' && window.db !== null);
+    const hasAuth = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser !== null);
+
+    // Запускаем целевую страницу сразу, как только всё готово (макс. 2.5 сек)
+    if ((hasDb && hasAuth) || (hasDb && attempts >= 20) || attempts >= 50) {
+      clearInterval(waitReady);
+      Router.go(targetPage, targetParams);
+    }
+  }, 50);
+});
 
 
