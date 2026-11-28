@@ -151,5 +151,38 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 50);
 });
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('lt_saved_route');
+  let targetPage = 'home';
+  let targetParams = {};
+
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      targetPage = parsed.page || 'home';
+      targetParams = parsed.params || {};
+    } catch (e) {}
+  }
+
+  // Главную страницу рисуем мгновенно
+  if (targetPage === 'home') {
+    Router.go('home', targetParams);
+    return;
+  }
+
+  // Запоминаем целевую страницу для Firebase, но пока не рендерим её без данных
+  Router.currentRoute = { page: targetPage, params: targetParams };
+  Router.historyStack = [{ page: targetPage, params: targetParams }];
+  Router.historyIndex = 0;
+  if (typeof Router.updateNavButtons === 'function') {
+    Router.updateNavButtons();
+  }
+
+  // Показываем чистую заглушку загрузки, пока Firebase не вызовет Router.renderCurrent()
+  const root = document.getElementById('appRoot');
+  if (root) {
+    root.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; min-height:50vh; color:#888; font-size:15px;">Загрузка...</div>';
+  }
+});
 
 
